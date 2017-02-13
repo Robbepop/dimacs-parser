@@ -14,4 +14,4 @@ categories = ["parsing", "parser-implementations", "text-processing"]
 itertools = "0"
 
 [features]
-# bench = []
+bench = []

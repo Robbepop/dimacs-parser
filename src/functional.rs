@@ -520,4 +520,81 @@ mod tests {
 			]
 		)
 	}
+
+	fn read_file_to_string(path: &str) -> String {
+		use std::io::prelude::*;
+		use std::fs::File;
+
+		let mut f = File::open(path).expect("bench file not found");
+		let mut s = String::new();
+
+		f.read_to_string(&mut s).expect("encountered problems writing bench file to string");
+		s
+	}
+
+	fn test_file(path: &str) {
+		let input = read_file_to_string(path);
+		assert!(DimacsIter::from_str(input.as_str()).all(|item| item.is_ok()));
+	}
+
+	#[test]
+	fn aim_100_1_6_no_1() {
+		test_file("bench/aim-100-1_6-no-1.cnf")
+	}
+
+	#[test]
+	fn zebra_v155_c1135() {
+		test_file("bench/zebra-v155-c1135.cnf")
+	}
+}
+
+#[cfg(all(feature = "bench", test))]
+mod benches {
+	use super::*;
+
+	use test::{Bencher, black_box};
+
+	fn read_file_to_string(path: &str) -> String {
+		use std::io::prelude::*;
+		use std::fs::File;
+
+		let mut f = File::open(path).expect("bench file not found");
+		let mut s = String::new();
+
+		f.read_to_string(&mut s).expect("encountered problems writing bench file to string");
+		s
+	}
+
+	fn bench_file(bencher: &mut Bencher, path: &str) {
+		let input = read_file_to_string(path);
+		bencher.iter(|| {
+			let items = DimacsIter::from_str(input.as_str()).collect::<Vec<_>>();
+			black_box(items);
+		});
+	}
+
+	#[bench]
+	fn aim_100_1_6_no_1(bencher: &mut Bencher) {
+		bench_file(bencher, "bench/aim-100-1_6-no-1.cnf")
+	}
+
+	#[bench]
+	fn aim_100_1_6_yes_1_4(bencher: &mut Bencher) {
+		bench_file(bencher, "bench/aim-50-1_6-yes1-4.cnf")
+	}
+
+	#[bench]
+	fn bf0432_007(bencher: &mut Bencher) {
+		bench_file(bencher, "bench/bf0432-007.cnf")
+	}
+
+	#[bench]
+	fn zebra_v155_c1135(bencher: &mut Bencher) {
+		bench_file(bencher, "bench/zebra-v155-c1135.cnf")
+	}
+
+	#[bench]
+	fn par_8_1_c(bencher: &mut Bencher) {
+		bench_file(bencher, "bench/par-8-1-c.cnf")
+	}
 }
