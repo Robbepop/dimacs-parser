@@ -657,13 +657,41 @@ mod tests {
 
 	fn test_file(path: &str) {
 		let input = read_file_to_string(path);
-		assert!(input.chars().dimacs_items().all(|item| item.is_ok()));
+		assert!(
+			input.chars().dimacs_items().all(
+				|item| {
+					if let Err(error) = item {
+						println!("{}", error);
+						false
+					}
+					else {
+						true
+					}
+				}
+			)
+		);
 	}
 
 	#[test]
 	fn aim_100_1_6_no_1() {
 		test_file("bench/aim-100-1_6-no-1.cnf")
 	}
+
+	#[test]
+	fn aim_50_1_6_yes1_4() {
+		test_file("bench/aim-50-1_6-yes1-4.cnf")
+	}
+
+	#[test]
+	fn par_8_1_c() {
+		test_file("bench/par-8-1-c.cnf")
+	}
+
+	#[test]
+	fn bf0432_007() {
+		test_file("bench/bf0432-007.cnf")
+	}
+
 
 	#[test]
 	fn zebra_v155_c1135() {
