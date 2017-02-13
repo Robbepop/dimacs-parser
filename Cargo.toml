@@ -11,6 +11,7 @@ description = """Utilities to parse files in DIMACS format which is the de-facto
 categories = ["parsing", "parser-implementations", "text-processing"]
 
 [dependencies]
+itertools = "0"
 
 [features]
 # bench = []
