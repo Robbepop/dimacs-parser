@@ -114,11 +114,11 @@ pub struct DimacsError {
 
 impl DimacsError {
 	pub fn new(line: usize, kind: ErrorKind) -> Self {
-		Self { line: line, kind: kind, info: None }
+		DimacsError { line: line, kind: kind, info: None }
 	}
 
 	pub fn with_info<T: Into<String>>(line: usize, kind: ErrorKind, info: T) -> Self {
-		Self {
+		DimacsError {
 			line: line,
 			kind: kind,
 			info: Some(info.into())
@@ -552,6 +552,11 @@ mod tests {
 	#[test]
 	fn aim_100_1_6_no_1() {
 		test_file("bench/aim-100-1_6-no-1.cnf")
+	}
+
+	#[test]
+	fn aim_50_1_6_yes1_4() {
+		test_file("bench/aim-50-1_6-yes1-4.cnf")
 	}
 
 	#[test]

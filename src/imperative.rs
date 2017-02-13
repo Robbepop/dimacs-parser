@@ -169,11 +169,11 @@ pub struct DimacsError {
 
 impl DimacsError {
 	pub fn new(line: usize, err_ch: char, kind: ErrorKind) -> Self {
-		Self { line: line, err_ch: err_ch, kind: kind, info: None }
+		DimacsError { line: line, err_ch: err_ch, kind: kind, info: None }
 	}
 
 	pub fn with_info<T: Into<String>>(line: usize, err_ch: char, kind: ErrorKind, info: T) -> Self {
-		Self {
+		DimacsError {
 			line: line,
 			err_ch: err_ch,
 			kind: kind,
@@ -228,7 +228,7 @@ impl<I> DimacsItemsIter<I>
 	where I: Iterator<Item=char>
 {
 	pub fn new(input: I) -> Self {
-		let mut iter = Self{
+		let mut iter = DimacsItemsIter{
 			input: input,
 			exhausted: false,
 			error_occured: Cell::new(false),
@@ -470,7 +470,7 @@ pub struct Instance {
 
 impl Instance {
 	pub fn new(num_vars: u64, clauses: Box<[Clause]>) -> Self {
-		Self{
+		Instance{
 			num_vars: num_vars,
 			clauses: clauses
 		}
