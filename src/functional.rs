@@ -24,39 +24,50 @@ fn parse_comment<'a, I: Iterator<Item=&'a str>>(line: usize, mut args: I) -> Res
 }
 
 fn expect_str<'a>(expected: &str, input: Option<&str>, line: usize) -> Result<()> {
-	if let Some(content) = input {
-		if content == expected {
-			Ok(())
-		}
-		else {
-			Err(DimacsError::new(line, UnexpectedToken))
-		}
-	}
-	else {
-		Err(DimacsError::new(line, UnexpectedEndOfLine))
+	match input {
+		Some(content) => {
+			match content == expected {
+				true => Ok(()),
+				_    => Err(DimacsError::new(line, UnexpectedToken))
+			}
+		},
+		None => Err(DimacsError::new(line, UnexpectedEndOfLine))
 	}
 }
 
 fn parse_config<'a, I: Iterator<Item=&'a str>>(line: usize, mut args: I) -> Result<DimacsItem> {
-	expect_str("p", args.next(), line)?;
+	expect_str("p"  , args.next(), line)?;
 	expect_str("cnf", args.next(), line)?;
-	match ((&mut args).next(), (&mut args).next(), (&mut args).next()) {
-		(Some(num_vars), Some(num_clauses), None) => {
-			if let Ok(parsed_num_vars) = num_vars.parse::<u64>() {
-				if let Ok(parsed_num_clauses) = num_clauses.parse::<u64>() {
-					Ok(DimacsItem::Config(Config::new(parsed_num_vars, parsed_num_clauses)))
-				}
-				else {
-					Err(DimacsError::new(line, InvalidConfigNumClauses))
-				}
+
+	let nv =
+		if let Some(arg_nv) = args.next() {
+			match arg_nv.parse::<u64>() {
+				Ok(nv) => Ok(nv),
+				_      => Err(DimacsError::new(line, InvalidConfigNumVars))
 			}
-			else {
-				Err(DimacsError::new(line, InvalidConfigNumVars))
+		}
+		else {
+			Err(DimacsError::new(line, TooFewArgsForConfig))
+		}?;
+
+	let nc =
+		if let Some(arg_nc) = args.next() {
+			match arg_nc.parse::<u64>() {
+				Ok(nc) => Ok(nc),
+				_      => Err(DimacsError::new(line, InvalidConfigNumClauses))
 			}
-		},
-		(.., Some(_)) => Err(DimacsError::new(line, TooManyArgsForConfig)),
-		_             => Err(DimacsError::new(line, TooFewArgsForConfig))
+		}
+		else {
+			Err(DimacsError::new(line, TooFewArgsForConfig))
+		}?;
+
+	if let Some(_) = args.next() {
+		Err(DimacsError::new(line, TooManyArgsForConfig))
 	}
+	else {
+		Ok(DimacsItem::Config(Config::new(nv, nc)))
+	}
+
 }
 
 fn parse_lit(line: usize, arg: &str) -> Result<Lit> {
