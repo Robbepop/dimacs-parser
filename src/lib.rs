@@ -5,5 +5,7 @@ extern crate test;
 
 extern crate itertools;
 
+pub mod items;
+pub mod errors;
 pub mod functional;
 pub mod imperative;
