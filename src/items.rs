@@ -1,12 +1,12 @@
 
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Var(pub u64);
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Sign { Pos, Neg }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Lit(i64);
 
 impl Lit {
@@ -23,6 +23,16 @@ impl Lit {
 pub struct Instance {
 	num_vars: u64,
 	clauses : Box<[Clause]>
+}
+
+impl Instance {
+	pub fn num_vars(&self) -> u64 {
+		self.num_vars
+	}
+
+	pub fn clauses(&self) -> &[Clause] {
+		&self.clauses
+	}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

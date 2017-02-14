@@ -60,11 +60,9 @@ fn parse_config<'a, I: Iterator<Item=&'a str>>(line: usize, mut args: I) -> Resu
 }
 
 fn parse_lit(line: usize, arg: &str) -> Result<Lit> {
-	if let Ok(parsed_lit) = arg.parse::<i64>() {
-		Ok(Lit::from_i64(parsed_lit))
-	}
-	else {
-		Err(DimacsError::new(line, InvalidClauseLit))
+	match arg.parse::<i64>() {
+		Ok(val) => Ok(Lit::from_i64(val)),
+		_       => Err(DimacsError::new(line, InvalidClauseLit))
 	}
 }
 
