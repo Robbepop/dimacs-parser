@@ -1,3 +1,5 @@
+#![feature(slice_patterns)]
+
 #![cfg_attr(all(feature = "bench", test), feature(test))]
 
 #[cfg(all(feature = "bench", test))]
@@ -9,3 +11,4 @@ pub mod items;
 pub mod errors;
 pub mod functional;
 pub mod imperative;
+pub mod semi;

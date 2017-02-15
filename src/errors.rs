@@ -15,13 +15,17 @@ pub enum ErrorKind {
 	MissingZeroLiteralAtEndOfClause,
 	InvalidClauseLit,
 
-	MultipleConfigs,
-	MissingConfig,
+	MultipleConfigs, // enhanced check
+	MissingConfig, // enhanced check
 	VarOutOfBounds,
-	TooManyClauses,
+	TooManyClauses, // enhanced check
+
+	InvalidInteger,
+	UnexpectedNegativeInteger,
 
 	// TODO!
-	SelfContradictingClause
+	SelfContradictingClause, // enhanced check
+	NonContiguousVarsUsed // enhanced check
 }
 
 #[derive(Debug, PartialEq, Eq)]
