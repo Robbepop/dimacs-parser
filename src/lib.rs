@@ -12,4 +12,4 @@ extern crate fnv;
 pub mod items;
 pub mod errors;
 pub mod parser;
-pub mod enhanced_parser;
+pub mod strict_parser;

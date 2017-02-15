@@ -10,16 +10,16 @@ type HashSet<T> = ::std::collections::HashSet<T>;
 
 use self::ErrorKind::*;
 
-pub struct EnhancedDimacsParser<'a> {
+pub struct StrictDimacsParser<'a> {
 	parser: DimacsParser<'a>,
 	seen_config: Option<Config>,
 	parsed_clauses: usize,
 	used_lits: HashSet<Lit>
 }
 
-impl<'a> EnhancedDimacsParser<'a> {
-	pub fn from_str(input: &str) -> EnhancedDimacsParser {
-		EnhancedDimacsParser{
+impl<'a> StrictDimacsParser<'a> {
+	pub fn from_str(input: &str) -> StrictDimacsParser {
+		StrictDimacsParser{
 			parser: DimacsParser::from_str(input),
 			seen_config: None,
 			parsed_clauses: 0,
@@ -75,7 +75,7 @@ impl<'a> EnhancedDimacsParser<'a> {
 	}
 }
 
-impl<'a> Iterator for EnhancedDimacsParser<'a> {
+impl<'a> Iterator for StrictDimacsParser<'a> {
 	type Item = Result<DimacsItem>;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -109,7 +109,7 @@ mod tests {
 	}
 
 	fn assert_items(content: &str, expected_items: &[Result<DimacsItem>]) {
-		let mut parsed_items = EnhancedDimacsParser::from_str(content);
+		let mut parsed_items = StrictDimacsParser::from_str(content);
 		for item in expected_items {
 			assert_eq!(parsed_items.next().unwrap(), *item);
 		}
@@ -251,7 +251,7 @@ mod tests {
 	fn test_file(path: &str) {
 		let input = read_file_to_string(path);
 		assert!(
-			EnhancedDimacsParser::from_str(input.as_str()).all(
+			StrictDimacsParser::from_str(input.as_str()).all(
 				|item| {
 					if let Err(error) = item {
 						println!("{:?}", error);
@@ -311,7 +311,7 @@ mod benches {
 	fn bench_file(bencher: &mut Bencher, path: &str) {
 		let input = read_file_to_string(path);
 		bencher.iter(|| {
-			let items = EnhancedDimacsParser::from_str(input.as_str()).collect::<Vec<_>>();
+			let items = StrictDimacsParser::from_str(input.as_str()).collect::<Vec<_>>();
 			black_box(items);
 		});
 	}
