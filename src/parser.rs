@@ -113,35 +113,19 @@ impl<'a> DimacsParser<'a> {
 		}
 	}
 
-	fn parse_line(&mut self, line: usize, content: &'a str) -> Option<(usize, Result<DimacsItem>)> {
+	fn parse_line(&mut self, line: usize, content: &'a str) -> Option<Result<DimacsItem>> {
 		self.line = line + 1;
 		match content.chars().next() {
-			Some(c) =>
-				Some((line,
-					match c {
-						'c'        => self.parse_comment(content),
-						'p'        => self.parse_config(content.split_whitespace()),
-						'-'        |
-						'1'...'9'  => self.parse_clause(content.split_whitespace()),
-						_          => self.err(InvalidStartOfLine)
-					}
-				)
+			Some(c) => Some(
+				match c {
+					'c'        => self.parse_comment(content),
+					'p'        => self.parse_config(content.split_whitespace()),
+					'-'        |
+					'1'...'9'  => self.parse_clause(content.split_whitespace()),
+					_          => self.err(InvalidStartOfLine)
+				}
 			),
-			None => self.next_line_and_item() // empty line!
-		}
-	}
-
-	fn next_item(&mut self) -> Option<Result<DimacsItem>> {
-		match self.next_line_and_item() {
-			Some((_, item)) => Some(item),
-			None               => None
-		}
-	}
-
-	fn next_line_and_item(&mut self) -> Option<(usize, Result<DimacsItem>)> {
-		match self.lines.next() {
-			Some((line, content)) => self.parse_line(line, content.trim_left()),
-			None                  => None
+			None => self.next() // empty line!
 		}
 	}
 }
@@ -151,7 +135,10 @@ impl<'a> Iterator for DimacsParser<'a> {
 
 	#[inline]
 	fn next(&mut self) -> Option<Self::Item> {
-		self.next_item()
+		match self.lines.next() {
+			Some((line, content)) => self.parse_line(line, content.trim_left()),
+			None                  => None
+		}
 	}
 }
 
