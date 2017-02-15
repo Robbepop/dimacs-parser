@@ -10,7 +10,5 @@ extern crate itertools;
 
 pub mod items;
 pub mod errors;
-pub mod functional;
-pub mod imperative;
 pub mod parser;
 pub mod enhanced_parser;
