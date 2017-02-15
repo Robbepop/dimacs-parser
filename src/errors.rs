@@ -25,7 +25,7 @@ pub enum ErrorKind {
 
 	// TODO!
 	SelfContradictingClause, // enhanced check
-	NonContiguousVarsUsed // enhanced check
+	NonUsedVarsFound // enhanced check
 }
 
 #[derive(Debug, PartialEq, Eq)]

@@ -1,4 +1,5 @@
-#![feature(slice_patterns)]
+#![feature(pub_restricted)]
+// #![feature(slice_patterns)]
 
 #![cfg_attr(all(feature = "bench", test), feature(test))]
 
@@ -11,4 +12,5 @@ pub mod items;
 pub mod errors;
 pub mod functional;
 pub mod imperative;
-pub mod semi;
+pub mod parser;
+pub mod enhanced_parser;

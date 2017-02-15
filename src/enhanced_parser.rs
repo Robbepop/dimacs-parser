@@ -1,181 +1,83 @@
 use ::items::*;
 use ::errors::*;
+use ::parser::*;
+
+use ::std::collections::HashSet;
 
 use self::ErrorKind::*;
 
-use ::std::iter::Enumerate;
-use ::std::str::Lines;
-
-struct DimacsIter<'a> {
-	lines: Enumerate<Lines<'a>>,
-	line : usize
+pub struct EnhancedDimacsParser<'a> {
+	parser: DimacsParser<'a>,
+	seen_config: Option<Config>,
+	parsed_clauses: usize,
+	used_lits: HashSet<Lit>
 }
 
-impl<'a> DimacsIter<'a> {
-	pub fn from_str(input: &'a str) -> DimacsIter<'a> {
-		DimacsIter{
-			lines: input.lines().enumerate(),
-			line : 0
+impl<'a> EnhancedDimacsParser<'a> {
+	pub fn from_str(input: &str) -> EnhancedDimacsParser {
+		EnhancedDimacsParser{
+			parser: DimacsParser::from_str(input),
+			seen_config: None,
+			parsed_clauses: 0,
+			used_lits: HashSet::new()
 		}
 	}
 
-	fn mk_err(&self, kind: ErrorKind) -> DimacsError {
-		DimacsError::new(self.line, kind)
-	}
-
-	fn err(&self, kind: ErrorKind) -> Result<DimacsItem> {
-		Err(self.mk_err(kind))
-	}
-
-	fn parse_comment(&mut self, content: &str) -> Result<DimacsItem> {
-		match content.splitn(2, |c: char| c.is_whitespace()).next() {
-			Some(c) => match c {
-				"c" => Ok(DimacsItem::Comment(Comment::from_str(&content[2..]))), // TODO! correct comment extraction
-				_   => self.err(InvalidStartOfLine)
-			},
-			None    => self.err(InvalidStartOfLine) // this should basically never happen!
+	fn check_config(&mut self, config: Config) -> Result<DimacsItem> {
+		match self.seen_config {
+			Some(_) => self.parser.err(MultipleConfigs),
+			None    => {
+				self.seen_config = Some(config);
+				Ok(DimacsItem::Config(config))
+			}
 		}
 	}
 
-	fn expect<I: Iterator<Item=&'a str>>(&mut self, expected: &str, args: &mut I) -> Result<()> {
-		match args.next() {
-			Some(arg) => match arg == expected {
-				true  => Ok(()),
-				false => Err(self.mk_err(UnexpectedToken))
-			},
-			None => Err(self.mk_err(UnexpectedEndOfLine))
-		}
-	}
-
-	fn parse_i64<I: Iterator<Item=&'a str>>(&mut self, args: &mut I) -> Result<i64> {
-		match args.next() {
-			Some(arg) => {
-				arg.parse::<i64>().map_err(|_| self.mk_err(InvalidInteger))
-			},
-			None      => Err(self.mk_err(UnexpectedEndOfLine))
-		}
-	}
-
-	fn parse_u64<I: Iterator<Item=&'a str>>(&mut self, args: &mut I) -> Result<u64> {
-		let v = self.parse_i64(args)?;
-		match v.is_negative() {
-			true => Err(self.mk_err(UnexpectedNegativeInteger)),
-			_    => Ok(v as u64)
-		}
-	}
-
-	fn parse_config<I: Iterator<Item=&'a str>>(&mut self, mut args: I) -> Result<DimacsItem> {
-		self.expect("p", &mut args)?;
-		self.expect("cnf", &mut args)?;
-
-		let nv = self.parse_u64(&mut args).map_err(|e|
-			if e == self.mk_err(InvalidInteger) { self.mk_err(InvalidConfigNumVars) } else {e} )?;
-		let nc = self.parse_u64(&mut args).map_err(|e|
-			if e == self.mk_err(InvalidInteger) { self.mk_err(InvalidConfigNumClauses) } else {e} )?;
-
-		if let Some(_) = args.next() {
-			self.err(TooManyArgsForConfig)
-		}
-		else {
-			Ok(DimacsItem::Config(Config::new(nv, nc)))
-		}
-	}
-
-	fn parse_clause<I: Iterator<Item=&'a str>>(&mut self, mut args: I) -> Result<DimacsItem> {
-		let mut lits = Vec::new();
-		while let Ok(val) = self.parse_i64(&mut args) {
-			lits.push(Lit::from_i64(val))
-		}
-
-		loop {
-			match self.parse_i64(&mut args) {
-				Ok(val) => lits.push(Lit::from_i64(val)),
-				Err(e)  => match e.kind {
-					UnexpectedEndOfLine => break,
-					kind                => return self.err(kind)
+	fn check_clause(&mut self, clause: Clause) -> Result<DimacsItem> {
+		match self.seen_config {
+			None      => self.parser.err(MissingConfig),
+			Some(cfg) => {
+				self.parsed_clauses += 1;
+				match self.parsed_clauses as u64 <= cfg.num_clauses() {
+					true  => {
+						for &lit in clause.lits() {
+							if lit.var().0 > cfg.num_vars() {
+								return self.parser.err(VarOutOfBounds)
+							}
+							self.used_lits.insert(lit);
+						}
+						Ok(DimacsItem::Clause(clause))
+					},
+					false => self.parser.err(TooManyClauses)
 				}
 			}
 		}
-		match lits.pop() {
-			Some(last) =>
-				match last == Lit::from_i64(0) {
-					true => Ok(DimacsItem::Clause(Clause::from_vec(lits))),
-					_    => self.err(MissingZeroLiteralAtEndOfClause)
-				},
-			None => self.err(TooFewArgsForClause)
+	}
+
+	fn check_item(&mut self, item: DimacsItem) -> Result<DimacsItem> {
+		match item {
+			DimacsItem::Comment(comment) => Ok(DimacsItem::Comment(comment)),
+			DimacsItem::Config(config)   => self.check_config(config),
+			DimacsItem::Clause(clause)   => self.check_clause(clause)
 		}
 	}
 
-	fn parse_line(&mut self, line: usize, content: &'a str) -> Option<(usize, Result<DimacsItem>)> {
-		self.line = line + 1;
-		match content.chars().next() {
-			Some(c) =>
-				Some((line,
-					match c {
-						'c'        => self.parse_comment(content),
-						'p'        => self.parse_config(content.split_whitespace()),
-						'-'        |
-						'1'...'9'  => self.parse_clause(content.split_whitespace()),
-						_          => self.err(InvalidStartOfLine)
-					}
-				)
-			),
-			None => self.next_line_and_item() // empty line!
+	fn forward_or_check(&mut self, res_item: Result<DimacsItem>) -> Result<DimacsItem> {
+		match res_item {
+			Ok(item) => self.check_item(item),
+			Err(e)   => Err(e)
 		}
-	}
-
-	fn next_item(&mut self) -> Option<Result<DimacsItem>> {
-		match self.next_line_and_item() {
-			Some((_, item)) => Some(item),
-			None               => None
-		}
-	}
-
-	fn next_line_and_item(&mut self) -> Option<(usize, Result<DimacsItem>)> {
-		match self.lines.next() {
-			Some((line, content)) => self.parse_line(line, content.trim_left()),
-			None                  => None
-		}
-	}
-
-	pub fn items(self) -> Items<'a> {
-		Items{iter: self}
-	}
-
-	pub fn lined_items(self) -> LinesAndItems<'a> {
-		LinesAndItems{iter: self}
 	}
 }
 
-impl<'a> Iterator for DimacsIter<'a> {
+impl<'a> Iterator for EnhancedDimacsParser<'a> {
 	type Item = Result<DimacsItem>;
 
 	fn next(&mut self) -> Option<Self::Item> {
-		self.next_item()
-	}
-}
-
-pub struct Items<'a> {
-	iter: DimacsIter<'a>
-}
-
-impl<'a> Iterator for Items<'a> {
-	type Item = Result<DimacsItem>;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.iter.next_item()
-	}
-}
-
-pub struct LinesAndItems<'a> {
-	iter: DimacsIter<'a>
-}
-
-impl<'a> Iterator for LinesAndItems<'a> {
-	type Item = (usize, Result<DimacsItem>);
-
-	fn next(&mut self) -> Option<Self::Item> {
-		self.iter.next_line_and_item()
+		match self.parser.next() {
+			Some(item) => Some(self.forward_or_check(item)),
+			None => None
+		}
 	}
 }
 
@@ -201,12 +103,12 @@ mod tests {
 		Err(DimacsError::new(line, kind))
 	}
 
-	fn assert_items(content: &str, items: &[Result<DimacsItem>]) {
-		let mut dimacs_iter = DimacsIter::from_str(content);
-		for item in items {
-			assert_eq!(dimacs_iter.next().unwrap(), *item);
+	fn assert_items(content: &str, expected_items: &[Result<DimacsItem>]) {
+		let mut parsed_items = EnhancedDimacsParser::from_str(content);
+		for item in expected_items {
+			assert_eq!(parsed_items.next().unwrap(), *item);
 		}
-		assert_eq!(dimacs_iter.next(), None);
+		assert_eq!(parsed_items.next(), None);
 	}
 
 	#[test]
@@ -344,7 +246,7 @@ mod tests {
 	fn test_file(path: &str) {
 		let input = read_file_to_string(path);
 		assert!(
-			DimacsIter::from_str(input.as_str()).all(
+			EnhancedDimacsParser::from_str(input.as_str()).all(
 				|item| {
 					if let Err(error) = item {
 						println!("{:?}", error);
@@ -404,7 +306,7 @@ mod benches {
 	fn bench_file(bencher: &mut Bencher, path: &str) {
 		let input = read_file_to_string(path);
 		bencher.iter(|| {
-			let items = DimacsIter::from_str(input.as_str()).collect::<Vec<_>>();
+			let items = EnhancedDimacsParser::from_str(input.as_str()).collect::<Vec<_>>();
 			black_box(items);
 		});
 	}
