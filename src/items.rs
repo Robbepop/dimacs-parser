@@ -3,6 +3,10 @@
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Var(pub u64);
 
+impl Var {
+	pub fn to_u64(self) -> u64 { self.0 }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Sign { Pos, Neg }
 

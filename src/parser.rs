@@ -20,6 +20,7 @@ impl<'a> DimacsParser<'a> {
 		}
 	}
 
+	#[inline]
 	fn mk_err(&self, kind: ErrorKind) -> DimacsError {
 		DimacsError::new(self.line, kind)
 	}
@@ -58,6 +59,7 @@ impl<'a> DimacsParser<'a> {
 		}
 	}
 
+	#[inline]
 	fn parse_i64<I: Iterator<Item=&'a str>>(&mut self, args: &mut I) -> Result<i64> {
 		match args.next() {
 			Some(arg) => {
@@ -67,11 +69,12 @@ impl<'a> DimacsParser<'a> {
 		}
 	}
 
+	#[inline]
 	fn parse_u64<I: Iterator<Item=&'a str>>(&mut self, args: &mut I) -> Result<u64> {
-		let v = self.parse_i64(args)?;
-		match v.is_negative() {
-			true => Err(self.mk_err(UnexpectedNegativeInteger)),
-			_    => Ok(v as u64)
+		match self.parse_i64(args)? {
+			val if val.is_positive()
+				=> Ok(val as u64),
+			_   => Err(self.mk_err(UnexpectedNegativeInteger))
 		}
 	}
 
@@ -113,15 +116,16 @@ impl<'a> DimacsParser<'a> {
 		}
 	}
 
+	#[inline]
 	fn parse_line(&mut self, line: usize, content: &'a str) -> Option<Result<DimacsItem>> {
 		self.line = line + 1;
 		match content.chars().next() {
 			Some(c) => Some(
 				match c {
-					'c'        => self.parse_comment(content),
-					'p'        => self.parse_config(content.split_whitespace()),
 					'-'        |
 					'1'...'9'  => self.parse_clause(content.split_whitespace()),
+					'c'        => self.parse_comment(content),
+					'p'        => self.parse_config(content.split_whitespace()),
 					_          => self.err(InvalidStartOfLine)
 				}
 			),

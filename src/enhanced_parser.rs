@@ -2,7 +2,11 @@ use ::items::*;
 use ::errors::*;
 use ::parser::*;
 
-use ::std::collections::HashSet;
+#[cfg(feature = "fnv")]
+type HashSet<T> = ::fnv::FnvHashSet<T>;
+
+#[cfg(not(feature = "fnv"))]
+type HashSet<T> = ::std::collections::HashSet<T>;
 
 use self::ErrorKind::*;
 
@@ -19,7 +23,7 @@ impl<'a> EnhancedDimacsParser<'a> {
 			parser: DimacsParser::from_str(input),
 			seen_config: None,
 			parsed_clauses: 0,
-			used_lits: HashSet::new()
+			used_lits: HashSet::default()
 		}
 	}
 
@@ -28,6 +32,7 @@ impl<'a> EnhancedDimacsParser<'a> {
 			Some(_) => self.parser.err(MultipleConfigs),
 			None    => {
 				self.seen_config = Some(config);
+				self.used_lits.reserve(config.num_vars() as usize * 2);
 				Ok(DimacsItem::Config(config))
 			}
 		}
@@ -41,7 +46,7 @@ impl<'a> EnhancedDimacsParser<'a> {
 				match self.parsed_clauses as u64 <= cfg.num_clauses() {
 					true  => {
 						for &lit in clause.lits() {
-							if lit.var().0 > cfg.num_vars() {
+							if lit.var().to_u64() > cfg.num_vars() {
 								return self.parser.err(VarOutOfBounds)
 							}
 							self.used_lits.insert(lit);

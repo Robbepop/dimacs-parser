@@ -12,6 +12,8 @@ categories = ["parsing", "parser-implementations", "text-processing"]
 
 [dependencies]
 itertools = "0"
+fnv = { version = "^1.0", optional = true }
 
 [features]
+default = ["fnv"]
 bench = []

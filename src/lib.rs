@@ -7,6 +7,7 @@
 extern crate test;
 
 extern crate itertools;
+extern crate fnv;
 
 pub mod items;
 pub mod errors;
