@@ -24,6 +24,7 @@ impl Loc {
 pub enum ErrorKind {
 	InvalidTokenStart,
 	UnknownKeyword,
+	InvalidIdentifier,
 	UnexpectedChar,
 
 	// UnexpectedToken,

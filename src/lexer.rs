@@ -178,6 +178,11 @@ impl<I> Lexer<I>
 		}
 	}
 
+	fn skip_ident(&mut self) -> Result<Token> {
+		while self.bump().is_alphanumeric() {}
+		self.err(InvalidIdentifier)
+	}
+
 	fn scan_nat(&mut self) -> Result<Token> {
 		let mut val = self.peek.to_digit(10)
 			.expect("expected a digit to base 10: (0...9)") as u64;
@@ -204,10 +209,14 @@ impl<I> Lexer<I>
 		self.update_nloc();
 		Some(
 			match self.peek {
-				'c' |
-				'p' |
-				's' |
-				'x'       => self.scan_ident(),
+				// 'c' |
+				// 'p' |
+				// 's' |
+				// 'x'       => self.scan_ident(),
+
+				'a'...'z' => self.scan_ident(),
+				'A'...'Z' => self.skip_ident(),
+
 				'1'...'9' => self.scan_nat(),
 
 				'0' => self.bump_tok(Zero),
@@ -376,6 +385,18 @@ mod tests {
 		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 4), Minus))));
 		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 5), Star))));
 		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 6), Eq))));
+
+		assert_eq!(lexer.next(), None);
+	}
+
+	#[test]
+	fn invalid_token_start() {
+		let sample = r"# foo Big";
+		let mut lexer = Lexer::from(sample.chars());
+
+		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 1), InvalidTokenStart))));
+		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 3), UnknownKeyword))));
+		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 7), InvalidIdentifier))));
 
 		assert_eq!(lexer.next(), None);
 	}
