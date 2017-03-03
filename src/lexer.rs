@@ -15,6 +15,14 @@ impl Token {
 			kind: kind
 		}
 	}
+
+	pub fn loc(self) -> Loc {
+		self.loc
+	}
+
+	pub fn kind(self) -> TokenKind {
+		self.kind
+	}
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -50,6 +58,15 @@ pub enum TokenKind {
 	Ident(Ident)
 }
 use self::TokenKind::*;
+
+impl TokenKind {
+	pub fn is_relevant(self) -> bool {
+		match self {
+			Comment => false,
+			_       => true
+		}
+	}
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Ident {
@@ -111,7 +128,7 @@ impl<I> Lexer<I>
 		lex
 	}
 
-	fn bump(&mut self) -> char {
+	fn bump_opt(&mut self) -> Option<char> {
 		if let Some(peeked) = self.input.next() {
 			self.peek = peeked;
 			if peeked == '\n' {
@@ -120,11 +137,16 @@ impl<I> Lexer<I>
 			else {
 				self.cloc.bump_col()
 			}
+			Some(peeked)
 		}
 		else {
-			self.peek = '\0';
+			None
 		}
-		self.peek
+	}
+
+	fn bump(&mut self) -> char {
+		self.peek = self.bump_opt().unwrap_or('\0');
+		self.peek 
 	}
 
 	fn mk_token(&self, kind: TokenKind) -> Token {
@@ -149,7 +171,7 @@ impl<I> Lexer<I>
 	}
 
 	fn skip_line(&mut self) {
-		while self.peek != '\n' || self.peek == '\0' {
+		while self.peek != '\n' && self.peek != '\0' {
 			self.bump();
 		}
 	}
@@ -204,8 +226,8 @@ impl<I> Lexer<I>
 	}
 
 	fn next_token(&mut self) -> Option<Result<Token>> {
-		if self.peek == '\0' { return None; }
 		self.skip_whitespace();
+		if self.peek == '\0' { return None; }
 		self.update_nloc();
 		Some(
 			match self.peek {
@@ -238,6 +260,42 @@ impl<I> Iterator for Lexer<I>
 
 	fn next(&mut self) -> Option<Self::Item> {
 		self.next_token()
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidLexer<I>
+	where I: Iterator<Item=char>
+{
+	input: Lexer<I>
+}
+
+impl<I> ValidLexer<I>
+	where I: Iterator<Item=char>
+{
+	pub fn from(input: I) -> ValidLexer<I> {
+		ValidLexer{ input: Lexer::from(input) }
+	}
+}
+
+impl<I> Iterator for ValidLexer<I>
+	where I: Iterator<Item=char>
+{
+	type Item = Result<Token>;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		match self.input.next() {
+			None => None,
+			Some(res_tok) => match res_tok {
+				Err(err) => Some(Err(err)),
+				Ok(tok)  => if tok.kind().is_relevant() {
+					Some(Ok(tok))
+				}
+				else {
+					self.next()
+				}
+			}
+		}
 	}
 }
 
@@ -392,6 +450,47 @@ mod tests {
 		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 1), InvalidTokenStart))));
 		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 3), UnknownKeyword))));
 		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 7), InvalidIdentifier))));
+
+		assert_eq!(lexer.next(), None);
+	}
+
+	#[test]
+	fn only_comments() {
+		let sample = r"
+			c This is a comment.
+			c Just like this.
+			c That has to be filtered.
+			c But not the following ...
+			c Filter this, too!
+			c And this!";
+		let mut lexer = Lexer::from(sample.chars());
+
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(2, 4), Comment))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(3, 4), Comment))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(4, 4), Comment))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(5, 4), Comment))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(6, 4), Comment))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(7, 4), Comment))));
+
+		assert_eq!(lexer.next(), None);
+	}
+
+	#[test]
+	fn filter_valid() {
+		let sample = r"
+			c This is a comment.
+			c Just like this.
+			c That has to be filtered.
+			c But not the following ...
+			42
+			c Filter this, too!
+			INVALID
+			c And this!
+		";
+		let mut lexer = ValidLexer::from(sample.chars());
+
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(6, 4), Nat(42)))));
+		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(8, 4), InvalidIdentifier))));
 
 		assert_eq!(lexer.next(), None);
 	}

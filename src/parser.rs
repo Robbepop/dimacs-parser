@@ -1,72 +1,97 @@
+use lexer::*;
+use errors::*;
+use items::*;
 
-// #[derive(Debug, Clone)]
-// pub struct DimacsParser<I>
-// 	where I: Iterator<Item=char>
-// {
-// 	input: Peekable<I>,
-// 	loc  : Loc
-// }
+#[derive(Debug, Clone)]
+pub struct Parser<I>
+	where I: Iterator<Item=char>
+{
+	input: ValidLexer<I>
+}
 
-// #[derive(Debug, Clone)]
-// pub struct CnfParser<I>
-// 	where I: Iterator<Item=char>
-// {
-// 	parser : DimacsParser<I>,
-// 	clauses: Vec<Clause>
-// }
+impl<I> Parser<I>
+	where I: Iterator<Item=char>
+{
+	pub fn from(input: I) -> Parser<I> {
+		Parser{
+			input: ValidLexer::from(input)
+		}
+	}
 
-// #[derive(Debug, Clone)]
-// pub struct SatParser<I>
-// 	where I: Iterator<Item=char>
-// {
-// 	parser : DimacsParser<I>,
-// 	formula: Formula
-// }
+	fn parse_header(&mut self) -> Result<Problem> {
+		Ok(Problem::cnf(0, 0)) // TODO!
+	}
 
-// impl<I> DimacsParser<I>
-// 	where I: Iterator<Item=char>
-// {
-// 	pub fn from_input(input: I) -> DimacsParser<I> {
-// 		DimacsParser{
-// 			input: input.peekable(),
-// 			loc  : Loc::new(0, 0)
-// 		}
-// 	}
+	fn parse_clauses(&mut self) -> Result<Vec<Clause>> {
+		Ok(vec![]) // TODO!
+	}
 
-// 	fn parse_header(&mut self) -> Result<Problem> {
-// 		Ok(Problem::cnf(0, 0)) // TODO!
-// 	}
+	fn parse_formula(&mut self) -> Result<Formula> {
+		Ok(Formula::Lit(Lit::from_i64(0))) // TODO!
+	}
 
-// 	fn parse_clauses(&mut self) -> Result<Vec<Clause>> {
-// 		Ok(vec![]) // TODO!
-// 	}
+	pub fn parse_dimacs(&mut self) -> Result<Instance> {
+		let _ = self.parse_header();
+		let _ = self.parse_clauses();
+		let _ = self.parse_formula();
+		Ok(Instance::cnf(0, vec![]))
+	}
+}
 
-// 	fn parse_formula(&mut self) -> Result<Formula> {
-// 		Ok(Formula::Lit(Lit::from_i64(0))) // TODO!
-// 	}
+pub fn parse_dimacs(input: &str) -> Result<Instance> {
+	Parser::from(input.chars()).parse_dimacs()
+}
 
-// 	fn bump(&mut self) -> Option<char> {
-// 		self.input.next();
-// 		if let Some(&peeked) = self.input.peek() {
-// 			self.peek = peeked;
-// 			if peeked == '\n' {
-// 				self.line += 1;
-// 				self.col   = 1;
-// 			}
-// 			else {
-// 				self.col += 1;
-// 			}
-// 			Some(peeked)
-// 		}
-// 		else {
-// 			None
-// 		}
-// 	}
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-// 	pub fn parse_dimacs(&mut self) -> Instance {
-// 		let _ = self.parse_header();
-// 		let _ = self.parse_clauses();
-// 		let _ = self.parse_formula();
-// 		Instance::cnf(0, vec![])
-// 	}
-// }
+	#[test]
+	fn simple_cnf() {
+		let sample = r"
+			c Sample DIMACS .cnf file
+			c holding some information
+			c and trying to be some
+			c kind of a test.
+			p cnf 42 1337
+			1 2 0
+			-3 4 0
+			5 -6 7 0
+			-7 -8 -9 0";
+		let parsed = parse_dimacs(sample).expect("valid .cnf");
+		let expected = Instance::cnf(42, vec![
+			Clause::from_vec(vec![Lit::from_i64( 1), Lit::from_i64( 2)]),
+			Clause::from_vec(vec![Lit::from_i64(-3), Lit::from_i64( 4)]),
+			Clause::from_vec(vec![Lit::from_i64( 5), Lit::from_i64(-6), Lit::from_i64( 7)]),
+			Clause::from_vec(vec![Lit::from_i64(-7), Lit::from_i64(-8), Lit::from_i64(-9)])
+		]);
+		assert_eq!(parsed, expected);
+	}
+
+	#[test]
+	fn simple_sat() {
+		let sample = r"
+			c Sample DIMACS .sat file
+			p sat 42
+			(*(+(1 3 -4)
+			+(4)
+			+(2 3)))";
+		let parsed = parse_dimacs(sample).expect("valid .sat");
+		let expected = Instance::sat(42,
+			Formula::paren(
+				Formula::and(vec![
+					Formula::or(vec![
+						Formula::lit(Lit::from_i64(1)), Formula::lit(Lit::from_i64(3)), Formula::lit(Lit::from_i64(-4))
+					]),
+					Formula::or(vec![
+						Formula::lit(Lit::from_i64(4))
+					]),
+					Formula::or(vec![
+						Formula::lit(Lit::from_i64(2)), Formula::lit(Lit::from_i64(3))
+					])
+				])
+			)
+		);
+		assert_eq!(parsed, expected);
+	}
+}

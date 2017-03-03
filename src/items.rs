@@ -52,10 +52,40 @@ pub enum Formula {
 	And(Box<[Formula]>),
 	Or(Box<[Formula]>),
 	Xor(Box<[Formula]>),
-	Equals(Box<[Formula]>)
+	Eq(Box<[Formula]>)
 }
 
-// #[derive(Debug, Clone, PartialEq, Eq)]
+impl Formula {
+	pub fn lit(lit: Lit) -> Formula {
+		Formula::Lit(lit)
+	}
+
+	pub fn paren(inner: Formula) -> Formula {
+		Formula::Paren(Box::new(inner))
+	}
+
+	pub fn neg(inner: Formula) -> Formula {
+		Formula::Neg(Box::new(inner))
+	}
+
+	pub fn and(params: Vec<Formula>) -> Formula {
+		Formula::And(params.into_boxed_slice())
+	}
+
+	pub fn or(params: Vec<Formula>) -> Formula {
+		Formula::Or(params.into_boxed_slice())
+	}
+
+	pub fn xor(params: Vec<Formula>) -> Formula {
+		Formula::Xor(params.into_boxed_slice())
+	}
+
+	pub fn eq(params: Vec<Formula>) -> Formula {
+		Formula::Eq(params.into_boxed_slice())
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instance {
 	Cnf{
 		num_vars: u64,
@@ -63,6 +93,7 @@ pub enum Instance {
 	},
 	Sat{
 		num_vars: u64,
+		extensions: Box<[Extension]>,
 		formula: Formula
 	}
 }
@@ -72,15 +103,31 @@ impl Instance {
 		Instance::Cnf{num_vars: num_vars, clauses: clauses.into_boxed_slice()}
 	}
 
+	pub fn sat_with_ext(num_vars: u64, extensions: Vec<Extension>, formula: Formula) -> Instance {
+		Instance::Sat{num_vars: num_vars, extensions: extensions.into_boxed_slice(), formula: formula}
+	}
+
 	pub fn sat(num_vars: u64, formula: Formula) -> Instance {
-		Instance::Sat{num_vars: num_vars, formula: formula}
+		Instance::sat_with_ext(num_vars, vec![], formula)
+	}
+
+	pub fn satx(num_vars: u64, formula: Formula) -> Instance {
+		Instance::sat_with_ext(num_vars, vec![Extension::Xor], formula)
+	}
+
+	pub fn sate(num_vars: u64, formula: Formula) -> Instance {
+		Instance::sat_with_ext(num_vars, vec![Extension::Eq], formula)
+	}
+
+	pub fn satex(num_vars: u64, formula: Formula) -> Instance {
+		Instance::sat_with_ext(num_vars, vec![Extension::Eq, Extension::Xor], formula)
 	}
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Extension {
 	Xor,
-	Equals
+	Eq
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -109,7 +156,7 @@ impl Problem {
 	}
 
 	pub fn sat_eq(num_vars: u64) -> Problem {
-		Problem::with_extensions(num_vars, &[Extension::Equals])
+		Problem::with_extensions(num_vars, &[Extension::Eq])
 	}
 
 	pub fn sat_xor(num_vars: u64) -> Problem {
@@ -117,7 +164,7 @@ impl Problem {
 	}
 
 	pub fn sat_ex(num_vars: u64) -> Problem {
-		Problem::with_extensions(num_vars, &[Extension::Equals, Extension::Xor])
+		Problem::with_extensions(num_vars, &[Extension::Eq, Extension::Xor])
 	}
 
 	pub fn has_extension(&self, ext: Extension) -> bool {

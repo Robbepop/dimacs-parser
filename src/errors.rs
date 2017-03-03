@@ -20,7 +20,7 @@ impl Loc {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ErrorKind {
 	InvalidTokenStart,
 	UnknownKeyword,
@@ -54,7 +54,7 @@ pub enum ErrorKind {
 	// NonUsedVarsFound // enhanced check
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ParseError {
 	pub loc : Loc,
 	pub kind: ErrorKind,
