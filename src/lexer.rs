@@ -364,4 +364,19 @@ mod tests {
 
 		assert_eq!(lexer.next(), None);
 	}
+
+	#[test]
+	fn all_ops() {
+		let sample = r"()+-*=";
+		let mut lexer = Lexer::from(sample.chars());
+
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 1), Open))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 2), Close))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 3), Plus))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 4), Minus))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 5), Star))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 6), Eq))));
+
+		assert_eq!(lexer.next(), None);
+	}
 }
