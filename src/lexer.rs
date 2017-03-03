@@ -209,11 +209,6 @@ impl<I> Lexer<I>
 		self.update_nloc();
 		Some(
 			match self.peek {
-				// 'c' |
-				// 'p' |
-				// 's' |
-				// 'x'       => self.scan_ident(),
-
 				'a'...'z' => self.scan_ident(),
 				'A'...'Z' => self.skip_ident(),
 
