@@ -178,18 +178,13 @@ impl<I> Lexer<I>
 	}
 
 	fn scan_nat(&mut self) -> Result<Token> {
-		let val = self.scan_u64()?;
-		self.tok(Nat(val))
-	}
-
-	fn scan_u64(&mut self) -> Result<u64> {
-		let mut val: u64 =
-			self.peek.to_digit(10).expect("expected a digit to base 10: (0...9)") as u64;
+		let mut val = self.peek.to_digit(10)
+			.expect("expected a digit to base 10: (0...9)") as u64;
 		while let Some(parsed) = self.bump().to_digit(10) {
 			val *= 10;
 			val += parsed as u64;
 		}
-		Ok(val)
+		self.tok(Nat(val))
 	}
 
 	fn skip_whitespace(&mut self) {
