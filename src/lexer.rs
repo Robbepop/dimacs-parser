@@ -171,6 +171,7 @@ impl<I> Lexer<I>
 			"cnf"   => self.tok(Ident(Cnf)),
 			"sat"   => self.tok(Ident(Sat)),
 			"sate"  => self.tok(Ident(Sate)),
+			"satx"  => self.tok(Ident(Satx)),
 			"satex" => self.tok(Ident(Satex)),
 			"xor"   => self.tok(Ident(Xor)),
 			_       => self.err(UnknownKeyword)
@@ -344,6 +345,22 @@ mod tests {
 		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 3), Minus))));
 		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 4), Nat(2)))));
 		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 5), Close))));
+
+		assert_eq!(lexer.next(), None);
+	}
+
+	#[test]
+	fn all_idents() {
+		let sample = r"p cnf sat satx sate satex xor";
+		let mut lexer = Lexer::from(sample.chars());
+
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 1), Ident(Problem)))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 3), Ident(Cnf)))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 7), Ident(Sat)))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 11), Ident(Satx)))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 16), Ident(Sate)))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 21), Ident(Satex)))));
+		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 27), Ident(Xor)))));
 
 		assert_eq!(lexer.next(), None);
 	}
