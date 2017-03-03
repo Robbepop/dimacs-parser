@@ -8,8 +8,9 @@ extern crate test;
 
 extern crate itertools;
 extern crate fnv;
+extern crate unreachable;
 
 pub mod items;
 pub mod errors;
-pub mod parser;
-pub mod strict_parser;
+pub mod lexer;
+// pub mod parser;

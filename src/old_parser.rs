@@ -36,8 +36,7 @@ impl<'a> DimacsParser<'a> {
 			Some(pos) => {
 				let (head, tail) = content.split_at(pos);
 				if head != "c" {
-					debug_assert!(false); // this should never happen!
-					self.err(InvalidStartOfLine)
+					unsafe{ ::unreachable::unreachable() }
 				}
 				else {
 					Ok(DimacsItem::Comment(Comment::from_str(&tail[1..])))

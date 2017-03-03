@@ -13,6 +13,7 @@ categories = ["parsing", "parser-implementations", "text-processing"]
 [dependencies]
 itertools = "0"
 fnv = { version = "^1.0", optional = true }
+unreachable = "^0"
 
 [features]
 default = ["fnv"]
