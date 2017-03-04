@@ -22,19 +22,28 @@ impl<I> Parser<I>
 		Ok(Problem::cnf(0, 0)) // TODO!
 	}
 
-	fn parse_clauses(&mut self) -> Result<Vec<Clause>> {
-		Ok(vec![]) // TODO!
+	fn parse_clauses(&mut self, num_clauses: u64) -> Result<Vec<Clause>> {
+		let clauses: Vec<Clause> = Vec::with_capacity(num_clauses as usize);
+		Ok(clauses) // TODO!
+	}
+
+	fn parse_cnf(&mut self, num_vars: u64, num_clauses: u64) -> Result<Instance> {
+		Ok(Instance::cnf(num_vars, self.parse_clauses(num_clauses)?))
 	}
 
 	fn parse_formula(&mut self) -> Result<Formula> {
 		Ok(Formula::Lit(Lit::from_i64(0))) // TODO!
 	}
 
+	fn parse_sat(&mut self, num_vars: u64, extensions: Box<[Extension]>) -> Result<Instance> {
+		Ok(Instance::sat_with_ext(num_vars, extensions.to_vec(), self.parse_formula()?))
+	}
+
 	pub fn parse_dimacs(&mut self) -> Result<Instance> {
-		let _ = self.parse_header();
-		let _ = self.parse_clauses();
-		let _ = self.parse_formula();
-		Ok(Instance::cnf(0, vec![]))
+		match self.parse_header()? {
+			Problem::Cnf{num_vars, num_clauses} => self.parse_cnf(num_vars, num_clauses),
+			Problem::Sat{num_vars, extensions } => self.parse_sat(num_vars, extensions)
+		}
 	}
 }
 
