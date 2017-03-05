@@ -1,13 +1,14 @@
 [package]
-name = "dimacs-parser"
+name = "dimacs"
 version = "0.1.0"
 authors = ["Robbepop"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/robbepop/dimacs-parser"
-documentation = "https://docs.rs/dimacs-parser"
-keywords = ["parser", "dimacs", "sat", "scanner", "iterator"]
-description = """Utilities to parse files in DIMACS format which is the de-facto standard for input to SAT solvers."""
+documentation = "https://docs.rs/dimacs"
+keywords = ["parser", "dimacs", "sat", "lexer", "format"]
+description = """Utilities to parse files in DIMACS .cnf or .sat format
+which is useful for participating in the DIMACS SAT solver competitions."""
 categories = ["parsing", "parser-implementations", "text-processing"]
 
 [dependencies]
