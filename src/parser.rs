@@ -24,11 +24,7 @@ impl<I> Parser<I>
 		ParseError::new(self.peek_loc(), kind)
 	}
 
-	fn token_err(&self, kind: ErrorKind) -> Result<Token> {
-		Err(self.mk_err(kind))
-	}
-
-	fn formula_err(&self, kind: ErrorKind) -> Result<Formula> {
+	fn err<T>(&self, kind: ErrorKind) -> Result<T> {
 		Err(self.mk_err(kind))
 	}
 
@@ -51,8 +47,8 @@ impl<I> Parser<I>
 		use self::ErrorKind::{UnexpectedEndOfFile, UnexpectedToken};
 		match self.peek?.kind() {
 			k if k == expected => self.consume(),
-			EndOfFile          => self.token_err(UnexpectedEndOfFile),
-			_                  => self.token_err(UnexpectedToken)
+			EndOfFile          => self.err(UnexpectedEndOfFile),
+			_                  => self.err(UnexpectedToken)
 		}
 	}
 
@@ -69,7 +65,7 @@ impl<I> Parser<I>
 				self.consume()?;
 				Ok(val)
 			},
-			_ => Err(self.mk_err(ErrorKind::UnexpectedToken))
+			_ => self.err(ErrorKind::UnexpectedToken)
 		}
 	}
 
@@ -83,7 +79,7 @@ impl<I> Parser<I>
 			Ident(Sate)  |
 			Ident(Satx)  |
 			Ident(Satex) => self.parse_sat_header(),
-			_ => Err(self.mk_err(ErrorKind::UnexpectedToken))
+			_ => self.err(ErrorKind::UnexpectedToken)
 		}
 	}
 
@@ -101,13 +97,13 @@ impl<I> Parser<I>
 					self.consume()?;
 					Ok(Lit::from_i64(-(val as i64)))
 				},
-				_ => Err(self.mk_err(ErrorKind::ExpectedNat))
+				_ => self.err(ErrorKind::ExpectedNat)
 			},
 			TokenKind::Nat(val) => {
 				self.consume()?;
 				Ok(Lit::from_i64(val as i64))
 			},
-			_ => Err(self.mk_err(ErrorKind::ExpectedLit))
+			_ => self.err(ErrorKind::ExpectedLit)
 		}
 	}
 
@@ -119,7 +115,7 @@ impl<I> Parser<I>
 			match self.peek?.kind() {
 				Minus | Nat(_)   => lits.push(self.parse_lit()?),
 				Zero | EndOfFile => { self.consume()?; return Ok(Clause::from_vec(lits)) },
-				_                => return Err(self.mk_err(UnexpectedToken))
+				_                => return self.err(UnexpectedToken)
 			}
 		}
 	}
@@ -141,7 +137,7 @@ impl<I> Parser<I>
 			Ident(Sate)  => { self.consume()?; Ok(EQ) },
 			Ident(Satx)  => { self.consume()?; Ok(XOR) },
 			Ident(Satex) => { self.consume()?; Ok(EQ | XOR) },
-			_ => Err(self.mk_err(InvalidSatExtension))
+			_ => self.err(InvalidSatExtension)
 		}
 	}
 
@@ -163,7 +159,7 @@ impl<I> Parser<I>
 			Minus      => self.parse_neg_formula(),
 			Eq         => self.parse_eq_formula(),
 			Ident(Xor) => self.parse_xor_formula(),
-			_          => self.formula_err(ErrorKind::UnexpectedToken)
+			_          => self.err(ErrorKind::UnexpectedToken)
 		}
 	}
 
@@ -203,7 +199,7 @@ impl<I> Parser<I>
 				self.expect(TokenKind::Nat(val))?;
 				Ok(Formula::lit(Lit::from_i64( -(val as i64) )))
 			},
-			_ => self.formula_err(ErrorKind::UnexpectedToken)
+			_ => self.err(ErrorKind::UnexpectedToken)
 		}
 	}
 
@@ -234,7 +230,7 @@ impl<I> Parser<I>
 			instance
 		}
 		else {
-			Err(self.mk_err(ErrorKind::NotParsedToEnd))
+			self.err(ErrorKind::NotParsedToEnd)
 		}
 	}
 }

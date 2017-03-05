@@ -63,6 +63,7 @@ pub enum TokenKind {
 use self::TokenKind::*;
 
 impl TokenKind {
+	/// Returns `true` if this `TokenKind` is relevant for parsing purposes.
 	pub fn is_relevant(self) -> bool {
 		match self {
 			Comment => false,
