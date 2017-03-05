@@ -1,10 +1,10 @@
-#![feature(pub_restricted)]
-// #![feature(slice_patterns)]
-
 #![cfg_attr(all(feature = "bench", test), feature(test))]
 
 #[cfg(all(feature = "bench", test))]
 extern crate test;
+
+#[macro_use]
+extern crate bitflags;
 
 extern crate itertools;
 extern crate fnv;

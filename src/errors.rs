@@ -26,6 +26,10 @@ pub enum ErrorKind {
 	UnknownKeyword,
 	InvalidIdentifier,
 	UnexpectedChar,
+	UnexpectedToken,
+	UnexpectedEndOfFile,
+	EmptyTokenStream,
+	InvalidSatExtension
 
 	// UnexpectedToken,
 	// UnexpectedEndOfLine,
