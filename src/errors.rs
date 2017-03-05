@@ -29,7 +29,8 @@ pub enum ErrorKind {
 	UnexpectedToken,
 	UnexpectedEndOfFile,
 	EmptyTokenStream,
-	InvalidSatExtension
+	InvalidSatExtension,
+	NotParsedToEnd
 
 	// UnexpectedToken,
 	// UnexpectedEndOfLine,

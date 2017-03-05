@@ -62,6 +62,13 @@ impl<I> Parser<I>
 		}
 	}
 
+	fn is_at_eof(&self) -> bool {
+		match self.peek {
+			Ok(peek) => peek.kind() == TokenKind::EndOfFile,
+			_        => false
+		}
+	}
+
 	fn expect_nat(&mut self) -> Result<u64> {
 		println!("Parser::expect_nat");
 		match self.peek?.kind() {
@@ -211,7 +218,13 @@ impl<I> Parser<I>
 	pub fn parse_dimacs(&mut self) -> Result<Instance> {
 		println!("Parser::parse_dimacs");
 		self.consume()?;
-		self.parse_header()
+		let instance = self.parse_header();
+		if self.is_at_eof() {
+			instance
+		}
+		else {
+			Err(self.mk_err(ErrorKind::NotParsedToEnd))
+		}
 	}
 }
 
