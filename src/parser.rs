@@ -63,6 +63,7 @@ impl<I> Parser<I>
 	}
 
 	fn is_at_eof(&self) -> bool {
+		println!("Parser::is_at_eof");
 		match self.peek {
 			Ok(peek) => peek.kind() == TokenKind::EndOfFile,
 			_        => false
@@ -103,10 +104,45 @@ impl<I> Parser<I>
 		Ok(Instance::cnf(num_vars, self.parse_clauses(num_clauses)?))
 	}
 
+	fn parse_lit(&mut self) -> Result<Lit> {
+		println!("Parser::parse_lit");
+		match self.peek?.kind() {
+			TokenKind::Minus => match self.consume()?.kind() {
+				TokenKind::Nat(val) => {
+					self.consume()?;
+					Ok(Lit::from_i64(-(val as i64)))
+				},
+				_ => Err(self.mk_err(ErrorKind::ExpectedNat))
+			},
+			TokenKind::Nat(val) => {
+				self.consume()?;
+				Ok(Lit::from_i64(val as i64))
+			},
+			_ => Err(self.mk_err(ErrorKind::ExpectedLit))
+		}
+	}
+
+	fn parse_clause(&mut self) -> Result<Clause> {
+		println!("Parser::parse_clause");
+		use self::TokenKind::{Minus, Nat, Zero, EndOfFile};
+		use self::ErrorKind::{UnexpectedToken};
+		let mut lits = Vec::new();
+		loop {
+			match self.peek?.kind() {
+				Minus | Nat(_)   => lits.push(self.parse_lit()?),
+				Zero | EndOfFile => { self.consume()?; return Ok(Clause::from_vec(lits)) },
+				_                => return Err(self.mk_err(UnexpectedToken))
+			}
+		}
+	}
+
 	fn parse_clauses(&mut self, num_clauses: u64) -> Result<Vec<Clause>> {
 		println!("Parser::parse_clauses");
-		let clauses: Vec<Clause> = Vec::with_capacity(num_clauses as usize);
-		Ok(clauses) // TODO!
+		let mut clauses = Vec::with_capacity(num_clauses as usize);
+		while !self.is_at_eof() {
+			clauses.push(self.parse_clause()?);
+		}
+		Ok(clauses) 
 	}
 
 	fn parse_sat_extensions<'a>(&'a mut self) -> Result<Extensions> {
@@ -236,27 +272,27 @@ pub fn parse_dimacs(input: &str) -> Result<Instance> {
 mod tests {
 	use super::*;
 
-	// #[test]
-	// fn simple_cnf() {
-	// 	let sample = r"
-	// 		c Sample DIMACS .cnf file
-	// 		c holding some information
-	// 		c and trying to be some
-	// 		c kind of a test.
-	// 		p cnf 42 1337
-	// 		1 2 0
-	// 		-3 4 0
-	// 		5 -6 7 0
-	// 		-7 -8 -9 0";
-	// 	let parsed = parse_dimacs(sample).expect("valid .cnf");
-	// 	let expected = Instance::cnf(42, vec![
-	// 		Clause::from_vec(vec![Lit::from_i64( 1), Lit::from_i64( 2)]),
-	// 		Clause::from_vec(vec![Lit::from_i64(-3), Lit::from_i64( 4)]),
-	// 		Clause::from_vec(vec![Lit::from_i64( 5), Lit::from_i64(-6), Lit::from_i64( 7)]),
-	// 		Clause::from_vec(vec![Lit::from_i64(-7), Lit::from_i64(-8), Lit::from_i64(-9)])
-	// 	]);
-	// 	assert_eq!(parsed, expected);
-	// }
+	#[test]
+	fn simple_cnf() {
+		let sample = r"
+			c Sample DIMACS .cnf file
+			c holding some information
+			c and trying to be some
+			c kind of a test.
+			p cnf 42 1337
+			1 2 0
+			-3 4 0
+			5 -6 7 0
+			-7 -8 -9 0";
+		let parsed = parse_dimacs(sample).expect("valid .cnf");
+		let expected = Instance::cnf(42, vec![
+			Clause::from_vec(vec![Lit::from_i64( 1), Lit::from_i64( 2)]),
+			Clause::from_vec(vec![Lit::from_i64(-3), Lit::from_i64( 4)]),
+			Clause::from_vec(vec![Lit::from_i64( 5), Lit::from_i64(-6), Lit::from_i64( 7)]),
+			Clause::from_vec(vec![Lit::from_i64(-7), Lit::from_i64(-8), Lit::from_i64(-9)])
+		]);
+		assert_eq!(parsed, expected);
+	}
 
 	#[test]
 	fn simple_sat() {

@@ -30,7 +30,9 @@ pub enum ErrorKind {
 	UnexpectedEndOfFile,
 	EmptyTokenStream,
 	InvalidSatExtension,
-	NotParsedToEnd
+	NotParsedToEnd,
+	ExpectedNat,
+	ExpectedLit
 
 	// UnexpectedToken,
 	// UnexpectedEndOfLine,
