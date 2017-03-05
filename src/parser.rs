@@ -3,7 +3,7 @@ use errors::*;
 use items::*;
 
 #[derive(Debug, Clone)]
-pub struct Parser<I>
+struct Parser<I>
 	where I: Iterator<Item=char>
 {
 	tokens: ValidLexer<I>,
@@ -13,7 +13,7 @@ pub struct Parser<I>
 impl<I> Parser<I>
 	where I: Iterator<Item=char>
 {
-	pub fn from(input: I) -> Parser<I> {
+	fn from(input: I) -> Parser<I> {
 		Parser{
 			tokens: ValidLexer::from(input),
 			peek  : Err(ParseError::new(Loc::new(0, 0), ErrorKind::EmptyTokenStream))
@@ -227,7 +227,7 @@ impl<I> Parser<I>
 		Ok(Formula::xor(self.parse_formula_params()?))
 	}
 
-	pub fn parse_dimacs(&mut self) -> Result<Instance> {
+	fn parse_dimacs(&mut self) -> Result<Instance> {
 		self.consume()?;
 		let instance = self.parse_header();
 		if self.is_at_eof() {
@@ -239,6 +239,10 @@ impl<I> Parser<I>
 	}
 }
 
+/// Parses a the given string as `.cnf` or `.sat` file as specified in
+/// [DIMACS format specification](http://www.domagoj-babic.com/uploads/ResearchProjects/Spear/dimacs-cnf.pdf).
+/// 
+/// Returns an appropriate SAT instance if no errors occured while parsing.
 pub fn parse_dimacs(input: &str) -> Result<Instance> {
 	Parser::from(input.chars()).parse_dimacs()
 }
