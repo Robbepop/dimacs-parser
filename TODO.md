@@ -5,4 +5,4 @@ TODO List for DIMACS Parser
  - maybe add other DIMACS formats (e.g. edge)
  - add some benchmarks testing performance of the new parsing facility
  - add some other parser and lexer tests
- 
+ - add fuzz testing
