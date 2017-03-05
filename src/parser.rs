@@ -248,7 +248,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn simple_cnf() {
+	fn simple_cnf_1() {
 		let sample = r"
 			c Sample DIMACS .cnf file
 			c holding some information
@@ -265,6 +265,24 @@ mod tests {
 			Clause::from_vec(vec![Lit::from_i64(-3), Lit::from_i64( 4)]),
 			Clause::from_vec(vec![Lit::from_i64( 5), Lit::from_i64(-6), Lit::from_i64( 7)]),
 			Clause::from_vec(vec![Lit::from_i64(-7), Lit::from_i64(-8), Lit::from_i64(-9)])
+		]);
+		assert_eq!(parsed, expected);
+	}
+
+	#[test]
+	fn simple_cnf_2() {
+		let sample = r"
+			c Example CNF format file
+			c
+			p cnf 4 3
+			1 3 -4 0
+			4 0 2
+			-3";
+		let parsed = parse_dimacs(sample).expect("valid .cnf");
+		let expected = Instance::cnf(4, vec![
+			Clause::from_vec(vec![Lit::from_i64( 1), Lit::from_i64( 3), Lit::from_i64(-4)]),
+			Clause::from_vec(vec![Lit::from_i64( 4)]),
+			Clause::from_vec(vec![Lit::from_i64( 2), Lit::from_i64(-3)])
 		]);
 		assert_eq!(parsed, expected);
 	}
