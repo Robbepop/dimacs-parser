@@ -6,3 +6,5 @@ TODO List for DIMACS Parser
  - add some benchmarks testing performance of the new parsing facility
  - add some other parser and lexer tests
  - add fuzz testing
+ - add macro to easily create static formulas
+ 
