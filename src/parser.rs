@@ -1,3 +1,16 @@
+//! The parser facility for parsing `.cnf` and `.sat` files as specified in the 
+//! [DIMACS format specification](http://www.domagoj-babic.com/uploads/ResearchProjects/Spear/dimacs-cnf.pdf).
+//! 
+//! The DIMACS format was specified for the DIMACS SAT solver competitions as input file format.
+//! Many other DIMACS file formats exist for other competitions, however, this crate currently only
+//! supports the formats that are relevant for SAT solvers.
+//! 
+//! In `.cnf` the entire SAT formula is encoded as a conjunction of disjunctions and so mainly stores
+//! a list of clauses consisting of literals.
+//! 
+//! The `.sat` format is slightly more difficult as the formula can be of a different shape and thus
+//! a `.sat` file internally looks similar to a Lisp file.
+
 use lexer::*;
 use errors::*;
 use items::*;
@@ -30,7 +43,7 @@ impl<I> Parser<I>
 
 	fn peek_loc(&self) -> Loc {
 		match self.peek {
-			Ok(tok)  => tok.loc(),
+			Ok(tok)  => tok.loc,
 			Err(err) => err.loc
 		}
 	}
@@ -45,7 +58,7 @@ impl<I> Parser<I>
 	fn expect(&mut self, expected: TokenKind) -> Result<Token> {
 		use self::TokenKind::EndOfFile;
 		use self::ErrorKind::{UnexpectedEndOfFile, UnexpectedToken};
-		match self.peek?.kind() {
+		match self.peek?.kind {
 			k if k == expected => self.consume(),
 			EndOfFile          => self.err(UnexpectedEndOfFile),
 			_                  => self.err(UnexpectedToken)
@@ -54,18 +67,18 @@ impl<I> Parser<I>
 
 	fn is_at_eof(&self) -> bool {
 		match self.peek {
-			Ok(peek) => peek.kind() == TokenKind::EndOfFile,
+			Ok(peek) => peek.kind == TokenKind::EndOfFile,
 			_        => false
 		}
 	}
 
 	fn expect_nat(&mut self) -> Result<u64> {
-		match self.peek?.kind() {
+		match self.peek?.kind {
 			TokenKind::Nat(val) => {
 				self.consume()?;
 				Ok(val)
 			},
-			_ => self.err(ErrorKind::UnexpectedToken)
+			_ => self.err(ErrorKind::ExpectedNat)
 		}
 	}
 
@@ -73,7 +86,7 @@ impl<I> Parser<I>
 		use self::TokenKind::{Ident};
 		use self::Ident::*;
 		self.expect(Ident(Problem))?;
-		match self.peek?.kind() {
+		match self.peek?.kind {
 			Ident(Cnf)   => self.parse_cnf_header(),
 			Ident(Sat)   |
 			Ident(Sate)  |
@@ -91,14 +104,11 @@ impl<I> Parser<I>
 	}
 
 	fn parse_lit(&mut self) -> Result<Lit> {
-		match self.peek?.kind() {
-			TokenKind::Minus => match self.consume()?.kind() {
-				TokenKind::Nat(val) => {
-					self.consume()?;
-					Ok(Lit::from_i64(-(val as i64)))
-				},
-				_ => self.err(ErrorKind::ExpectedNat)
-			},
+		match self.peek?.kind {
+			TokenKind::Minus => {
+				self.consume()?;
+				Ok(Lit::from_i64(-(self.expect_nat()? as i64)))
+			}
 			TokenKind::Nat(val) => {
 				self.consume()?;
 				Ok(Lit::from_i64(val as i64))
@@ -112,7 +122,7 @@ impl<I> Parser<I>
 		use self::ErrorKind::{UnexpectedToken};
 		let mut lits = Vec::new();
 		loop {
-			match self.peek?.kind() {
+			match self.peek?.kind {
 				Minus | Nat(_)   => lits.push(self.parse_lit()?),
 				Zero | EndOfFile => { self.consume()?; return Ok(Clause::from_vec(lits)) },
 				_                => return self.err(UnexpectedToken)
@@ -132,7 +142,7 @@ impl<I> Parser<I>
 		use self::TokenKind::{Ident};
 		use self::Ident::{Sat, Sate, Satx, Satex};
 		use self::ErrorKind::*;
-		match self.peek?.kind() {
+		match self.peek?.kind {
 			Ident(Sat)   => { self.consume()?; Ok(NONE) },
 			Ident(Sate)  => { self.consume()?; Ok(EQ) },
 			Ident(Satx)  => { self.consume()?; Ok(XOR) },
@@ -151,7 +161,7 @@ impl<I> Parser<I>
 		use lexer::TokenKind::*;
 		use lexer::Ident::*;
 		let tok = self.peek?;
-		match tok.kind() {
+		match tok.kind {
 			Nat(val)   => { self.consume()?; Ok(Formula::lit(Lit::from_i64(val as i64))) },
 			Open       => self.parse_paren_formula(),
 			Plus       => self.parse_or_formula(),
@@ -165,7 +175,7 @@ impl<I> Parser<I>
 
 	fn parse_formula_list(&mut self) -> Result<Vec<Formula>> {
 		let mut formulas = Vec::new();
-		while self.peek?.kind() != TokenKind::Close {
+		while self.peek?.kind != TokenKind::Close {
 			formulas.push(self.parse_formula()?);
 		}
 		Ok(formulas)
@@ -188,7 +198,7 @@ impl<I> Parser<I>
 	fn parse_neg_formula(&mut self) -> Result<Formula> {
 		self.expect(TokenKind::Minus)?;
 		let tok = self.peek?;
-		match tok.kind() {
+		match tok.kind {
 			TokenKind::Open => {
 				self.expect(TokenKind::Open)?;
 				let formula = Formula::neg(self.parse_formula()?);
@@ -196,7 +206,7 @@ impl<I> Parser<I>
 				Ok(formula)
 			},
 			TokenKind::Nat(val) => {
-				self.expect(TokenKind::Nat(val))?;
+				self.consume()?;
 				Ok(Formula::lit(Lit::from_i64( -(val as i64) )))
 			},
 			_ => self.err(ErrorKind::UnexpectedToken)

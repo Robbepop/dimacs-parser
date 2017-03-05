@@ -4,8 +4,8 @@ use ::errors::ErrorKind::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Token {
-	loc : Loc,
-	kind: TokenKind
+	pub loc : Loc,
+	pub kind: TokenKind
 }
 
 impl Token {
@@ -14,14 +14,6 @@ impl Token {
 			loc : loc,
 			kind: kind
 		}
-	}
-
-	pub fn loc(self) -> Loc {
-		self.loc
-	}
-
-	pub fn kind(self) -> TokenKind {
-		self.kind
 	}
 }
 
@@ -185,11 +177,21 @@ impl<I> Lexer<I>
 		self.tok(Comment)
 	}
 
-	fn scan_ident(&mut self) -> Result<Token> {
+	fn unknown_keyword(&mut self) -> Result<Token> {
+		while self.bump().is_alphanumeric() {}
+		self.err(UnknownKeyword)
+	}
+
+	fn scan_keyword(&mut self) -> Result<Token> {
 		self.buffer.clear();
 		self.buffer.push(self.peek);
 		while self.bump().is_alphanumeric() {
-			self.buffer.push(self.peek);
+			if self.buffer.len() < 5 {
+				self.buffer.push(self.peek);
+			}
+			else {
+				return self.unknown_keyword();
+			}
 		}
 		match self.buffer.as_str() {
 			"c"     => self.scan_comment(),
@@ -202,11 +204,6 @@ impl<I> Lexer<I>
 			"xor"   => self.tok(Ident(Xor)),
 			_       => self.err(UnknownKeyword)
 		}
-	}
-
-	fn skip_ident(&mut self) -> Result<Token> {
-		while self.bump().is_alphanumeric() {}
-		self.err(InvalidIdentifier)
 	}
 
 	fn scan_nat(&mut self) -> Result<Token> {
@@ -235,8 +232,8 @@ impl<I> Lexer<I>
 		self.update_nloc();
 		Some(
 			match self.peek {
-				'a'...'z' => self.scan_ident(),
-				'A'...'Z' => self.skip_ident(),
+				'A'...'Z' |
+				'a'...'z' => self.scan_keyword(),
 
 				'1'...'9' => self.scan_nat(),
 
@@ -292,7 +289,7 @@ impl<I> Iterator for ValidLexer<I>
 			None => None,
 			Some(res_tok) => match res_tok {
 				Err(err) => Some(Err(err)),
-				Ok(tok)  => if tok.kind().is_relevant() {
+				Ok(tok)  => if tok.kind.is_relevant() {
 					Some(Ok(tok))
 				}
 				else {
@@ -453,7 +450,7 @@ mod tests {
 
 		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 1), InvalidTokenStart))));
 		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 3), UnknownKeyword))));
-		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 7), InvalidIdentifier))));
+		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(1, 7), UnknownKeyword))));
 
 		assert_eq!(lexer.next(), None);
 	}
@@ -494,7 +491,7 @@ mod tests {
 		let mut lexer = ValidLexer::from(sample.chars());
 
 		assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(6, 4), Nat(42)))));
-		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(8, 4), InvalidIdentifier))));
+		assert_eq!(lexer.next(), Some(Err(ParseError::new(Loc::new(8, 4), UnknownKeyword))));
 
 		assert_eq!(lexer.next(), None);
 	}
