@@ -55,7 +55,10 @@ pub enum TokenKind {
 	Close,
 
 	/// Represents a known keyword, e.g. cnf, sat, sate, satex
-	Ident(Ident)
+	Ident(Ident),
+
+	/// Represents the end of a file
+	EndOfFile
 }
 use self::TokenKind::*;
 
