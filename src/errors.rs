@@ -72,7 +72,10 @@ pub enum ErrorKind {
 /// Represents an error that occured while parsing.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ParseError {
+	/// The source location (line + column) of the error.
 	pub loc : Loc,
+
+	/// The kind of the error that occured.
 	pub kind: ErrorKind,
 }
 
