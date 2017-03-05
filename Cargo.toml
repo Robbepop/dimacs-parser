@@ -11,11 +11,9 @@ description = """Utilities to parse files in DIMACS format which is the de-facto
 categories = ["parsing", "parser-implementations", "text-processing"]
 
 [dependencies]
-itertools = "0"
-fnv = { version = "^1.0", optional = true }
 unreachable = "^0"
 bitflags = "0.8.0"
 
 [features]
-default = ["fnv"]
+default = ["bench"]
 bench = []

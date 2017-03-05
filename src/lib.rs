@@ -6,8 +6,6 @@ extern crate test;
 #[macro_use]
 extern crate bitflags;
 
-extern crate itertools;
-extern crate fnv;
 extern crate unreachable;
 
 pub mod items;

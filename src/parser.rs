@@ -21,22 +21,18 @@ impl<I> Parser<I>
 	}
 
 	fn mk_err(&self, kind: ErrorKind) -> ParseError {
-		println!("Parser::mk_err");
 		ParseError::new(self.peek_loc(), kind)
 	}
 
 	fn token_err(&self, kind: ErrorKind) -> Result<Token> {
-		println!("Parser::token_err");
 		Err(self.mk_err(kind))
 	}
 
 	fn formula_err(&self, kind: ErrorKind) -> Result<Formula> {
-		println!("Parser::formula_err");
 		Err(self.mk_err(kind))
 	}
 
 	fn peek_loc(&self) -> Loc {
-		println!("Parser::peek_loc");
 		match self.peek {
 			Ok(tok)  => tok.loc(),
 			Err(err) => err.loc
@@ -44,7 +40,6 @@ impl<I> Parser<I>
 	}
 
 	fn consume(&mut self) -> Result<Token> {
-		println!("Parser::consume");
 		self.peek = self.tokens
 			.next()
 			.unwrap_or(Ok(Token::new(self.peek_loc(), TokenKind::EndOfFile)));
@@ -52,7 +47,6 @@ impl<I> Parser<I>
 	}
 
 	fn expect(&mut self, expected: TokenKind) -> Result<Token> {
-		println!("Parser::expect");
 		use self::TokenKind::EndOfFile;
 		use self::ErrorKind::{UnexpectedEndOfFile, UnexpectedToken};
 		match self.peek?.kind() {
@@ -63,7 +57,6 @@ impl<I> Parser<I>
 	}
 
 	fn is_at_eof(&self) -> bool {
-		println!("Parser::is_at_eof");
 		match self.peek {
 			Ok(peek) => peek.kind() == TokenKind::EndOfFile,
 			_        => false
@@ -71,7 +64,6 @@ impl<I> Parser<I>
 	}
 
 	fn expect_nat(&mut self) -> Result<u64> {
-		println!("Parser::expect_nat");
 		match self.peek?.kind() {
 			TokenKind::Nat(val) => {
 				self.consume()?;
@@ -82,7 +74,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_header(&mut self) -> Result<Instance> {
-		println!("Parser::parse_header");
 		use self::TokenKind::{Ident};
 		use self::Ident::*;
 		self.expect(Ident(Problem))?;
@@ -97,7 +88,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_cnf_header(&mut self) -> Result<Instance> {
-		println!("Parser::parse_cnf_header");
 		self.expect(TokenKind::Ident(Ident::Cnf))?;
 		let num_vars    = self.expect_nat()?;
 		let num_clauses = self.expect_nat()?;
@@ -105,7 +95,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_lit(&mut self) -> Result<Lit> {
-		println!("Parser::parse_lit");
 		match self.peek?.kind() {
 			TokenKind::Minus => match self.consume()?.kind() {
 				TokenKind::Nat(val) => {
@@ -123,7 +112,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_clause(&mut self) -> Result<Clause> {
-		println!("Parser::parse_clause");
 		use self::TokenKind::{Minus, Nat, Zero, EndOfFile};
 		use self::ErrorKind::{UnexpectedToken};
 		let mut lits = Vec::new();
@@ -137,7 +125,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_clauses(&mut self, num_clauses: u64) -> Result<Vec<Clause>> {
-		println!("Parser::parse_clauses");
 		let mut clauses = Vec::with_capacity(num_clauses as usize);
 		while !self.is_at_eof() {
 			clauses.push(self.parse_clause()?);
@@ -146,7 +133,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_sat_extensions<'a>(&'a mut self) -> Result<Extensions> {
-		println!("Parser::parse_sat_extensions");
 		use self::TokenKind::{Ident};
 		use self::Ident::{Sat, Sate, Satx, Satex};
 		use self::ErrorKind::*;
@@ -160,14 +146,12 @@ impl<I> Parser<I>
 	}
 
 	fn parse_sat_header(&mut self) -> Result<Instance> {
-		println!("Parser::parse_sat_header");
 		let extensions = self.parse_sat_extensions()?;
 		let num_vars   = self.expect_nat()?;
 		Ok(Instance::sat(num_vars, extensions, self.parse_paren_formula()?))
 	}
 
 	fn parse_formula(&mut self) -> Result<Formula> {
-		println!("Parser::parse_formula");
 		use lexer::TokenKind::*;
 		use lexer::Ident::*;
 		let tok = self.peek?;
@@ -184,7 +168,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_formula_list(&mut self) -> Result<Vec<Formula>> {
-		println!("Parser::parse_formula_list");
 		let mut formulas = Vec::new();
 		while self.peek?.kind() != TokenKind::Close {
 			formulas.push(self.parse_formula()?);
@@ -193,7 +176,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_formula_params(&mut self) -> Result<Vec<Formula>> {
-		println!("Parser::parse_formula_params");
 		self.expect(TokenKind::Open)?;
 		let params = self.parse_formula_list()?;
 		self.expect(TokenKind::Close)?;
@@ -201,7 +183,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_paren_formula(&mut self) -> Result<Formula> {
-		println!("Parser::parse_paren_formula");
 		self.expect(TokenKind::Open)?;
 		let formula = Formula::paren(self.parse_formula()?);
 		self.expect(TokenKind::Close)?;
@@ -209,7 +190,6 @@ impl<I> Parser<I>
 	}
 
 	fn parse_neg_formula(&mut self) -> Result<Formula> {
-		println!("Parser::parse_neg_formula");
 		self.expect(TokenKind::Minus)?;
 		let tok = self.peek?;
 		match tok.kind() {
@@ -228,31 +208,26 @@ impl<I> Parser<I>
 	}
 
 	fn parse_or_formula(&mut self) -> Result<Formula> {
-		println!("Parser::parse_or_formula");
 		self.expect(TokenKind::Plus)?;
 		Ok(Formula::or(self.parse_formula_params()?))
 	}
 
 	fn parse_and_formula(&mut self) -> Result<Formula> {
-		println!("Parser::parse_and_formula");
 		self.expect(TokenKind::Star)?;
 		Ok(Formula::and(self.parse_formula_params()?))
 	}
 
 	fn parse_eq_formula(&mut self) -> Result<Formula> {
-		println!("Parser::parse_eq_formula");
 		self.expect(TokenKind::Eq)?;
 		Ok(Formula::eq(self.parse_formula_params()?))
 	}
 
 	fn parse_xor_formula(&mut self) -> Result<Formula> {
-		println!("Parser::parse_xor_formula");
 		self.expect(TokenKind::Ident(Ident::Xor))?;
 		Ok(Formula::xor(self.parse_formula_params()?))
 	}
 
 	pub fn parse_dimacs(&mut self) -> Result<Instance> {
-		println!("Parser::parse_dimacs");
 		self.consume()?;
 		let instance = self.parse_header();
 		if self.is_at_eof() {
