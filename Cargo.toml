@@ -1,6 +1,6 @@
 [package]
 name = "dimacs"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Robbepop"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
@@ -12,7 +12,7 @@ which is useful for participating in the DIMACS SAT solver competitions."""
 categories = ["parsing", "parser-implementations", "text-processing"]
 
 [dependencies]
-bitflags = "0.8.0"
+bitflags = "0.8.2"
 
 # [features]
 # default = ["bench"]
