@@ -21,7 +21,28 @@ extern crate test;
 #[macro_use]
 extern crate bitflags;
 
-pub mod items;
-pub mod errors;
+mod items;
+mod errors;
 mod lexer;
-pub mod parser;
+mod parser;
+
+pub use items::{
+	Clause,
+	Extensions,
+	Lit,
+	Var,
+
+	Formula,
+	Instance,
+	Sign,
+
+	FormulaBox,
+	FormulaList
+};
+pub use errors::{
+	Loc,
+	ParseError,
+	ErrorKind,
+	Result
+};
+pub use parser::parse_dimacs;
