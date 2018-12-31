@@ -31,6 +31,9 @@ impl Lit {
 	/// Returns the associated variable for this literal.
 	pub fn var(self) -> Var { Var(self.0.abs() as u64) }
 
+	/// Returns the inner `i64` value.
+	pub fn to_i64(self) -> i64 { self.0 }
+
 	/// Returns the sign of this literal.
 	pub fn sign(self) -> Sign {
 		match self.0 >= 0 {
