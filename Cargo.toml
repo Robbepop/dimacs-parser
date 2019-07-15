@@ -4,6 +4,7 @@ version = "0.2.0"
 authors = ["Robbepop"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
+edition = "2018"
 repository = "https://github.com/robbepop/dimacs-parser"
 documentation = "https://docs.rs/dimacs"
 keywords = ["parser", "dimacs", "sat", "lexer", "format"]

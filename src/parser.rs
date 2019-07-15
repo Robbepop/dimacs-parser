@@ -11,9 +11,9 @@
 //! The `.sat` format is slightly more difficult as the formula can be of a different shape and thus
 //! a `.sat` file internally looks similar to a Lisp file.
 
-use lexer::*;
-use errors::*;
-use items::*;
+use crate::lexer::*;
+use crate::errors::*;
+use crate::items::*;
 
 #[derive(Debug, Clone)]
 struct Parser<I>
@@ -158,8 +158,8 @@ impl<I> Parser<I>
 	}
 
 	fn parse_formula(&mut self) -> Result<Formula> {
-		use lexer::TokenKind::*;
-		use lexer::Ident::*;
+		use crate::lexer::TokenKind::*;
+		use crate::lexer::Ident::*;
 		let tok = self.peek?;
 		match tok.kind {
 			Nat(val)   => { self.consume()?; Ok(Formula::lit(Lit::from_i64(val as i64))) },

@@ -26,7 +26,7 @@ mod errors;
 mod lexer;
 mod parser;
 
-pub use items::{
+pub use crate::items::{
 	Clause,
 	Extensions,
 	Lit,
@@ -39,10 +39,10 @@ pub use items::{
 	FormulaBox,
 	FormulaList
 };
-pub use errors::{
+pub use crate::errors::{
 	Loc,
 	ParseError,
 	ErrorKind,
 	Result
 };
-pub use parser::parse_dimacs;
+pub use crate::parser::parse_dimacs;
