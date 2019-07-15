@@ -1,13 +1,13 @@
-//! The parser facility for parsing `.cnf` and `.sat` files as specified in the 
+//! The parser facility for parsing `.cnf` and `.sat` files as specified in the
 //! [DIMACS format specification](http://www.domagoj-babic.com/uploads/ResearchProjects/Spear/dimacs-cnf.pdf).
-//! 
+//!
 //! The DIMACS format was specified for the DIMACS SAT solver competitions as input file format.
 //! Many other DIMACS file formats exist for other competitions, however, this crate currently only
 //! supports the formats that are relevant for SAT solvers.
-//! 
+//!
 //! In `.cnf` the entire SAT formula is encoded as a conjunction of disjunctions and so mainly stores
 //! a list of clauses consisting of literals.
-//! 
+//!
 //! The `.sat` format is slightly more difficult as the formula can be of a different shape and thus
 //! a `.sat` file internally looks similar to a Lisp file.
 
@@ -135,7 +135,7 @@ impl<I> Parser<I>
 		while !self.is_at_eof() {
 			clauses.push(self.parse_clause()?);
 		}
-		Ok(clauses) 
+		Ok(clauses)
 	}
 
 	fn parse_sat_extensions<'a>(&'a mut self) -> Result<Extensions> {
@@ -143,10 +143,10 @@ impl<I> Parser<I>
 		use self::Ident::{Sat, Sate, Satx, Satex};
 		use self::ErrorKind::*;
 		match self.peek?.kind {
-			Ident(Sat)   => { self.consume()?; Ok(NONE) },
-			Ident(Sate)  => { self.consume()?; Ok(EQ) },
-			Ident(Satx)  => { self.consume()?; Ok(XOR) },
-			Ident(Satex) => { self.consume()?; Ok(EQ | XOR) },
+			Ident(Sat)   => { self.consume()?; Ok(Extensions::NONE) },
+			Ident(Sate)  => { self.consume()?; Ok(Extensions::EQ) },
+			Ident(Satx)  => { self.consume()?; Ok(Extensions::XOR) },
+			Ident(Satex) => { self.consume()?; Ok(Extensions::EQ | Extensions::XOR) },
 			_ => self.err(InvalidSatExtension)
 		}
 	}
@@ -247,7 +247,7 @@ impl<I> Parser<I>
 
 /// Parses a the given string as `.cnf` or `.sat` file as specified in
 /// [DIMACS format specification](http://www.domagoj-babic.com/uploads/ResearchProjects/Spear/dimacs-cnf.pdf).
-/// 
+///
 /// Returns an appropriate SAT instance if no errors occured while parsing.
 pub fn parse_dimacs(input: &str) -> Result<Instance> {
 	Parser::from(input.chars()).parse_dimacs()
@@ -306,7 +306,7 @@ mod tests {
 			+(4)
 			+(2 3)))";
 		let parsed = parse_dimacs(sample).expect("valid .sat");
-		let expected = Instance::sat(42, NONE,
+		let expected = Instance::sat(42, Extensions::NONE,
 			Formula::paren(
 				Formula::and(vec![
 					Formula::or(vec![
