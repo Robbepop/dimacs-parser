@@ -1,6 +1,6 @@
-use ::errors::*;
+use crate::errors::*;
 
-use ::errors::ErrorKind::*;
+use crate::errors::ErrorKind::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Token {
@@ -232,10 +232,10 @@ impl<I> Lexer<I>
 		self.update_nloc();
 		Some(
 			match self.peek {
-				'A'...'Z' |
-				'a'...'z' => self.scan_keyword(),
+				'A'..='Z' |
+				'a'..='z' => self.scan_keyword(),
 
-				'1'...'9' => self.scan_nat(),
+				'1'..='9' => self.scan_nat(),
 
 				'0' => self.bump_tok(Zero),
 				'(' => self.bump_tok(Open),

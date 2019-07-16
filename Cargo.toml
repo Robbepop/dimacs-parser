@@ -4,6 +4,7 @@ version = "0.2.0"
 authors = ["Robbepop"]
 license = "MIT/Apache-2.0"
 readme = "README.md"
+edition = "2018"
 repository = "https://github.com/robbepop/dimacs-parser"
 documentation = "https://docs.rs/dimacs"
 keywords = ["parser", "dimacs", "sat", "lexer", "format"]
@@ -12,7 +13,7 @@ which is useful for participating in the DIMACS SAT solver competitions."""
 categories = ["parsing", "parser-implementations", "text-processing"]
 
 [dependencies]
-bitflags = "0.8.2"
+bitflags = "1.1.0"
 
 [badges]
 travis-ci = { repository = "Robbepop/dimacs-parser" }

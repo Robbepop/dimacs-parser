@@ -180,12 +180,12 @@ impl Instance {
 
 bitflags! {
 	/// Possible extensions for `.sat` file SAT instances.
-    pub flags Extensions: u32 {
+    pub struct Extensions: u32 {
     	/// If no extensions are being used.
-    	const NONE = 0b00000000,
+    	const NONE = 0b00000000;
     	/// If the XOR-Extension is being used to allow for `xor(..)` formulas.
-        const XOR  = 0b00000001,
+        const XOR  = 0b00000001;
         /// If the EQ-Extension is being used to allow for `=(..)` formulas.
-        const EQ   = 0b00000010
+        const EQ   = 0b00000010;
     }
 }
