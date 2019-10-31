@@ -29,4 +29,4 @@ pub use crate::errors::{ErrorKind, Loc, ParseError, Result};
 pub use crate::items::{
     Clause, Extensions, Formula, FormulaBox, FormulaList, Instance, Lit, Sign, Var,
 };
-pub use crate::parser::parse_dimacs;
+pub use crate::parser::{parse_dimacs, read_dimacs};

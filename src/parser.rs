@@ -11,6 +11,8 @@
 //! The `.sat` format is slightly more difficult as the formula can be of a different shape and thus
 //! a `.sat` file internally looks similar to a Lisp file.
 
+use std::io::Read;
+
 use crate::errors::*;
 use crate::items::*;
 use crate::lexer::*;
@@ -272,6 +274,14 @@ where
 /// Returns an appropriate SAT instance if no errors occured while parsing.
 pub fn parse_dimacs(input: &str) -> Result<Instance> {
     Parser::from(input.bytes()).parse_dimacs()
+}
+
+/// Parses a the given byte source as `.cnf` or `.sat` file as specified in
+/// [DIMACS format specification](http://www.domagoj-babic.com/uploads/ResearchProjects/Spear/dimacs-cnf.pdf).
+///
+/// Returns an appropriate SAT instance if no errors occured while parsing.
+pub fn read_dimacs<R: Read>(input: R) -> Result<Instance> {
+    Parser::from(input.bytes().map(|b| b.expect("IO Error"))).parse_dimacs()
 }
 
 #[cfg(test)]
