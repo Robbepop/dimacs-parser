@@ -18,7 +18,7 @@ use crate::lexer::*;
 #[derive(Debug, Clone)]
 struct Parser<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     tokens: ValidLexer<I>,
     peek: Result<Token>,
@@ -26,7 +26,7 @@ where
 
 impl<I> Parser<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     fn from(input: I) -> Parser<I> {
         Parser {
@@ -271,7 +271,7 @@ where
 ///
 /// Returns an appropriate SAT instance if no errors occured while parsing.
 pub fn parse_dimacs(input: &str) -> Result<Instance> {
-    Parser::from(input.chars()).parse_dimacs()
+    Parser::from(input.bytes()).parse_dimacs()
 }
 
 #[cfg(test)]

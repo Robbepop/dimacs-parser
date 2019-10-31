@@ -92,16 +92,16 @@ use self::Ident::*;
 #[derive(Debug, Clone)]
 pub struct Lexer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     /// input iterator
     input: I,
 
     /// internal buffer to map to known keywords
-    buffer: String,
+    buffer: Vec<u8>,
 
-    /// the current character that is being dispatched upon
-    peek: char,
+    /// the current byte that is being dispatched upon
+    peek: u8,
 
     /// represents the `Loc` of the next iterated item
     nloc: Loc,
@@ -112,13 +112,13 @@ where
 
 impl<I> Lexer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     pub fn from(input: I) -> Lexer<I> {
         let mut lex = Lexer {
             input: input,
-            buffer: String::new(),
-            peek: '\0',
+            buffer: Vec::new(),
+            peek: b'\0',
             nloc: Loc::new(1, 0),
             cloc: Loc::new(1, 0),
         };
@@ -126,10 +126,10 @@ where
         lex
     }
 
-    fn bump_opt(&mut self) -> Option<char> {
+    fn bump_opt(&mut self) -> Option<u8> {
         if let Some(peeked) = self.input.next() {
             self.peek = peeked;
-            if peeked == '\n' {
+            if peeked == b'\n' {
                 self.cloc.bump_line()
             } else {
                 self.cloc.bump_col()
@@ -140,8 +140,8 @@ where
         }
     }
 
-    fn bump(&mut self) -> char {
-        self.peek = self.bump_opt().unwrap_or('\0');
+    fn bump(&mut self) -> u8 {
+        self.peek = self.bump_opt().unwrap_or(b'\0');
         self.peek
     }
 
@@ -167,7 +167,7 @@ where
     }
 
     fn skip_line(&mut self) {
-        while self.peek != '\n' && self.peek != '\0' {
+        while self.peek != b'\n' && self.peek != b'\0' {
             self.bump();
         }
     }
@@ -178,47 +178,52 @@ where
     }
 
     fn unknown_keyword(&mut self) -> Result<Token> {
-        while self.bump().is_alphanumeric() {}
+        while self.bump().is_ascii_alphanumeric() {}
         self.err(UnknownKeyword)
     }
 
     fn scan_keyword(&mut self) -> Result<Token> {
         self.buffer.clear();
         self.buffer.push(self.peek);
-        while self.bump().is_alphanumeric() {
+        while self.bump().is_ascii_alphanumeric() {
             if self.buffer.len() < 5 {
                 self.buffer.push(self.peek);
             } else {
                 return self.unknown_keyword();
             }
         }
-        match self.buffer.as_str() {
-            "c" => self.scan_comment(),
-            "p" => self.tok(Ident(Problem)),
-            "cnf" => self.tok(Ident(Cnf)),
-            "sat" => self.tok(Ident(Sat)),
-            "sate" => self.tok(Ident(Sate)),
-            "satx" => self.tok(Ident(Satx)),
-            "satex" => self.tok(Ident(Satex)),
-            "xor" => self.tok(Ident(Xor)),
+        match self.buffer.as_slice() {
+            b"c" => self.scan_comment(),
+            b"p" => self.tok(Ident(Problem)),
+            b"cnf" => self.tok(Ident(Cnf)),
+            b"sat" => self.tok(Ident(Sat)),
+            b"sate" => self.tok(Ident(Sate)),
+            b"satx" => self.tok(Ident(Satx)),
+            b"satex" => self.tok(Ident(Satex)),
+            b"xor" => self.tok(Ident(Xor)),
             _ => self.err(UnknownKeyword),
         }
     }
 
     fn scan_nat(&mut self) -> Result<Token> {
-        let mut val = self
-            .peek
-            .to_digit(10)
-            .expect("expected a digit to base 10: (0...9)") as u64;
-        while let Some(parsed) = self.bump().to_digit(10) {
+        let mut val = if self.peek.is_ascii_digit() {
+            (self.peek - b'0') as u64
+        } else {
+            panic!("expected a digit to base 10: (0...9)")
+        };
+        loop {
+            let peeked = self.bump();
+            if !peeked.is_ascii_digit() {
+                break;
+            }
             val *= 10;
-            val += parsed as u64;
+            val += (peeked - b'0') as u64;
         }
         self.tok(Nat(val))
     }
 
     fn skip_whitespace(&mut self) {
-        while self.peek.is_whitespace() {
+        while self.peek.is_ascii_whitespace() {
             self.bump();
         }
     }
@@ -229,22 +234,22 @@ where
 
     fn next_token(&mut self) -> Option<Result<Token>> {
         self.skip_whitespace();
-        if self.peek == '\0' {
+        if self.peek == b'\0' {
             return None;
         }
         self.update_nloc();
         Some(match self.peek {
-            'A'..='Z' | 'a'..='z' => self.scan_keyword(),
+            b'A'..=b'Z' | b'a'..=b'z' => self.scan_keyword(),
 
-            '1'..='9' => self.scan_nat(),
+            b'1'..=b'9' => self.scan_nat(),
 
-            '0' => self.bump_tok(Zero),
-            '(' => self.bump_tok(Open),
-            ')' => self.bump_tok(Close),
-            '+' => self.bump_tok(Plus),
-            '*' => self.bump_tok(Star),
-            '=' => self.bump_tok(Eq),
-            '-' => self.bump_tok(Minus),
+            b'0' => self.bump_tok(Zero),
+            b'(' => self.bump_tok(Open),
+            b')' => self.bump_tok(Close),
+            b'+' => self.bump_tok(Plus),
+            b'*' => self.bump_tok(Star),
+            b'=' => self.bump_tok(Eq),
+            b'-' => self.bump_tok(Minus),
 
             _ => {
                 self.bump();
@@ -256,7 +261,7 @@ where
 
 impl<I> Iterator for Lexer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     type Item = Result<Token>;
 
@@ -268,14 +273,14 @@ where
 #[derive(Debug, Clone)]
 pub struct ValidLexer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     input: Lexer<I>,
 }
 
 impl<I> ValidLexer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     pub fn from(input: I) -> ValidLexer<I> {
         ValidLexer {
@@ -286,7 +291,7 @@ where
 
 impl<I> Iterator for ValidLexer<I>
 where
-    I: Iterator<Item = char>,
+    I: Iterator<Item = u8>,
 {
     type Item = Result<Token>;
 
@@ -323,7 +328,7 @@ mod tests {
 			-3 4 0
 			5 -6 7 0
 			-7 -8 -9 0";
-        let mut lexer = Lexer::from(sample.chars());
+        let mut lexer = Lexer::from(sample.bytes());
 
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(2, 4), Comment))));
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(3, 4), Comment))));
@@ -378,7 +383,7 @@ mod tests {
 			(*(+(1 3 -4)
 			+(4)
 			+(2 3)))";
-        let mut lexer = Lexer::from(sample.chars());
+        let mut lexer = Lexer::from(sample.bytes());
 
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(2, 4), Comment))));
 
@@ -426,7 +431,7 @@ mod tests {
     #[test]
     fn tricky_1() {
         let sample = r"(1-2)";
-        let mut lexer = Lexer::from(sample.chars());
+        let mut lexer = Lexer::from(sample.bytes());
 
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 1), Open))));
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 2), Nat(1)))));
@@ -440,7 +445,7 @@ mod tests {
     #[test]
     fn all_idents() {
         let sample = r"p cnf sat satx sate satex xor";
-        let mut lexer = Lexer::from(sample.chars());
+        let mut lexer = Lexer::from(sample.bytes());
 
         assert_eq!(
             lexer.next(),
@@ -477,7 +482,7 @@ mod tests {
     #[test]
     fn all_ops() {
         let sample = r"()+-*=";
-        let mut lexer = Lexer::from(sample.chars());
+        let mut lexer = Lexer::from(sample.bytes());
 
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 1), Open))));
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(1, 2), Close))));
@@ -492,7 +497,7 @@ mod tests {
     #[test]
     fn invalid_token_start() {
         let sample = r"# foo Big";
-        let mut lexer = Lexer::from(sample.chars());
+        let mut lexer = Lexer::from(sample.bytes());
 
         assert_eq!(
             lexer.next(),
@@ -519,7 +524,7 @@ mod tests {
 			c But not the following ...
 			c Filter this, too!
 			c And this!";
-        let mut lexer = Lexer::from(sample.chars());
+        let mut lexer = Lexer::from(sample.bytes());
 
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(2, 4), Comment))));
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(3, 4), Comment))));
@@ -543,7 +548,7 @@ mod tests {
 			INVALID
 			c And this!
 		";
-        let mut lexer = ValidLexer::from(sample.chars());
+        let mut lexer = ValidLexer::from(sample.bytes());
 
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(6, 4), Nat(42)))));
         assert_eq!(
