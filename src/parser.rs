@@ -286,6 +286,8 @@ pub fn read_dimacs<R: Read>(input: R) -> Result<Instance> {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Read;
+
     use super::*;
 
     #[test]
@@ -347,6 +349,84 @@ mod tests {
 			+(4)
 			+(2 3)))";
         let parsed = parse_dimacs(sample).expect("valid .sat");
+        let expected = Instance::sat(
+            42,
+            Extensions::NONE,
+            Formula::paren(Formula::and(vec![
+                Formula::or(vec![
+                    Formula::lit(Lit::from_i64(1)),
+                    Formula::lit(Lit::from_i64(3)),
+                    Formula::lit(Lit::from_i64(-4)),
+                ]),
+                Formula::or(vec![Formula::lit(Lit::from_i64(4))]),
+                Formula::or(vec![
+                    Formula::lit(Lit::from_i64(2)),
+                    Formula::lit(Lit::from_i64(3)),
+                ]),
+            ])),
+        );
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn simple_cnf_read_1() {
+        let sample = r"
+			c Sample DIMACS .cnf file
+			c holding some information
+			c and trying to be some
+			c kind of a test.
+			p cnf 42 1337
+			1 2 0
+			-3 4 0
+			5 -6 7 0
+			-7 -8 -9 0";
+        let parsed = read_dimacs(sample.as_bytes()).expect("valid .cnf");
+        let expected = Instance::cnf(
+            42,
+            vec![
+                Clause::from_vec(vec![Lit::from_i64(1), Lit::from_i64(2)]),
+                Clause::from_vec(vec![Lit::from_i64(-3), Lit::from_i64(4)]),
+                Clause::from_vec(vec![Lit::from_i64(5), Lit::from_i64(-6), Lit::from_i64(7)]),
+                Clause::from_vec(vec![
+                    Lit::from_i64(-7),
+                    Lit::from_i64(-8),
+                    Lit::from_i64(-9),
+                ]),
+            ],
+        );
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn simple_cnf_read_2() {
+        let sample = r"
+			c Example CNF format file
+			c
+			p cnf 4 3
+			1 3 -4 0
+			4 0 2
+			-3";
+        let parsed = read_dimacs(sample.as_bytes()).expect("valid .cnf");
+        let expected = Instance::cnf(
+            4,
+            vec![
+                Clause::from_vec(vec![Lit::from_i64(1), Lit::from_i64(3), Lit::from_i64(-4)]),
+                Clause::from_vec(vec![Lit::from_i64(4)]),
+                Clause::from_vec(vec![Lit::from_i64(2), Lit::from_i64(-3)]),
+            ],
+        );
+        assert_eq!(parsed, expected);
+    }
+
+    #[test]
+    fn simple_sat_read() {
+        let sample = r"
+			c Sample DIMACS .sat file
+			p sat 42
+			(*(+(1 3 -4)
+			+(4)
+			+(2 3)))";
+        let parsed = read_dimacs(sample.as_bytes()).expect("valid .sat");
         let expected = Instance::sat(
             42,
             Extensions::NONE,
