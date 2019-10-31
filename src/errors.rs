@@ -6,84 +6,88 @@
 /// to debug their input files formats.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Loc {
-	line: u64,
-	col : u64
+    line: u64,
+    col: u64,
 }
 
 impl Loc {
-	/// Creates a new location with a given line and column.
-	pub fn new(line: u64, col: u64) -> Loc {
-		Loc{ line: line, col: col }
-	}
+    /// Creates a new location with a given line and column.
+    pub fn new(line: u64, col: u64) -> Loc {
+        Loc {
+            line: line,
+            col: col,
+        }
+    }
 
-	/// Bumps the line of this location, resetting its column.
-	pub fn bump_line(&mut self) {
-		self.line += 1;
-		self.col   = 0;
-	}
+    /// Bumps the line of this location, resetting its column.
+    pub fn bump_line(&mut self) {
+        self.line += 1;
+        self.col = 0;
+    }
 
-	/// Bumps the column of this location.
-	pub fn bump_col(&mut self) {
-		self.col += 1;
-	}
+    /// Bumps the column of this location.
+    pub fn bump_col(&mut self) {
+        self.col += 1;
+    }
 }
 
 /// Different kinds of errors that may occure while parsing.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ErrorKind {
-	/// When parsing an invalid character at the start of a token.
-	InvalidTokenStart,
+    /// When parsing an invalid character at the start of a token.
+    InvalidTokenStart,
 
-	/// When parsing an unknown keyword (e.g. "foo").
-	UnknownKeyword,
+    /// When parsing an unknown keyword (e.g. "foo").
+    UnknownKeyword,
 
-	/// When lexing an unexpected character.
-	UnexpectedChar,
+    /// When lexing an unexpected character.
+    UnexpectedChar,
 
-	/// When parsing an unexpected token.
-	UnexpectedToken,
+    /// When parsing an unexpected token.
+    UnexpectedToken,
 
-	/// When detecting an unexpected end of file.
-	UnexpectedEndOfFile,
+    /// When detecting an unexpected end of file.
+    UnexpectedEndOfFile,
 
-	/// When tried to parse an empty string.
-	EmptyTokenStream,
+    /// When tried to parse an empty string.
+    EmptyTokenStream,
 
-	/// When parsing an unknown SAT extension.
-	InvalidSatExtension,
+    /// When parsing an unknown SAT extension.
+    InvalidSatExtension,
 
-	/// When the parser is not at the end of file when finished parsing.
-	NotParsedToEnd,
+    /// When the parser is not at the end of file when finished parsing.
+    NotParsedToEnd,
 
-	/// When a natural number was expected but not found.
-	ExpectedNat,
+    /// When a natural number was expected but not found.
+    ExpectedNat,
 
-	/// When a literal was expected but not found.
-	ExpectedLit
+    /// When a literal was expected but not found.
+    ExpectedLit, // IllegalXorExtensionUsed, // enhanced check
+                 // IllegalEqExtensionUsed, // enhanced check
 
-	// IllegalXorExtensionUsed, // enhanced check
-	// IllegalEqExtensionUsed, // enhanced check
-
-	// TooManyVariables, // enhanced check
-	// TooManyClauses, // enhanced check
-	// SelfContradictingClause, // enhanced check
+                 // TooManyVariables, // enhanced check
+                 // TooManyClauses, // enhanced check
+                 // SelfContradictingClause, // enhanced check
 }
 
 /// Represents an error that occured while parsing.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ParseError {
-	/// The source location (line + column) of the error.
-	pub loc : Loc,
+    /// The source location (line + column) of the error.
+    pub loc: Loc,
 
-	/// The kind of the error that occured.
-	pub kind: ErrorKind,
+    /// The kind of the error that occured.
+    pub kind: ErrorKind,
 }
 
 impl ParseError {
-	/// Creates a new parser error at the given source location with the given error kind.
-	pub fn new(loc: Loc, kind: ErrorKind) -> Self {
-		ParseError { loc: loc, kind: kind }
-	}
+    /// Creates a new parser error at the given source location with the given error kind.
+    pub fn new(loc: Loc, kind: ErrorKind) -> Self {
+        ParseError {
+            loc: loc,
+            kind: kind,
+        }
+    }
 }
 
 /// The result type used within this crate while parsing.
