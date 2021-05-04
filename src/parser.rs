@@ -33,7 +33,10 @@ where
     fn from(input: I) -> Parser<I> {
         Parser {
             tokens: ValidLexer::from(input),
-            peek: Err(ParseError::new(Loc::new(0, 0), ErrorKind::EmptyTokenStream)),
+            peek: Err(ParseError::new(
+                Loc::new(0, 0),
+                ErrorKind::EmptyTokenStream,
+            )),
         }
     }
 
@@ -93,7 +96,9 @@ where
         self.expect(Ident(Problem))?;
         match self.peek?.kind {
             Ident(Cnf) => self.parse_cnf_header(),
-            Ident(Sat) | Ident(Sate) | Ident(Satx) | Ident(Satex) => self.parse_sat_header(),
+            Ident(Sat) | Ident(Sate) | Ident(Satx) | Ident(Satex) => {
+                self.parse_sat_header()
+            }
             _ => self.err(ErrorKind::UnexpectedToken),
         }
     }
@@ -286,8 +291,6 @@ pub fn read_dimacs<R: Read>(input: R) -> Result<Instance> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
-
     use super::*;
 
     #[test]
@@ -308,7 +311,11 @@ mod tests {
             vec![
                 Clause::from_vec(vec![Lit::from_i64(1), Lit::from_i64(2)]),
                 Clause::from_vec(vec![Lit::from_i64(-3), Lit::from_i64(4)]),
-                Clause::from_vec(vec![Lit::from_i64(5), Lit::from_i64(-6), Lit::from_i64(7)]),
+                Clause::from_vec(vec![
+                    Lit::from_i64(5),
+                    Lit::from_i64(-6),
+                    Lit::from_i64(7),
+                ]),
                 Clause::from_vec(vec![
                     Lit::from_i64(-7),
                     Lit::from_i64(-8),
@@ -332,7 +339,11 @@ mod tests {
         let expected = Instance::cnf(
             4,
             vec![
-                Clause::from_vec(vec![Lit::from_i64(1), Lit::from_i64(3), Lit::from_i64(-4)]),
+                Clause::from_vec(vec![
+                    Lit::from_i64(1),
+                    Lit::from_i64(3),
+                    Lit::from_i64(-4),
+                ]),
                 Clause::from_vec(vec![Lit::from_i64(4)]),
                 Clause::from_vec(vec![Lit::from_i64(2), Lit::from_i64(-3)]),
             ],
@@ -386,7 +397,11 @@ mod tests {
             vec![
                 Clause::from_vec(vec![Lit::from_i64(1), Lit::from_i64(2)]),
                 Clause::from_vec(vec![Lit::from_i64(-3), Lit::from_i64(4)]),
-                Clause::from_vec(vec![Lit::from_i64(5), Lit::from_i64(-6), Lit::from_i64(7)]),
+                Clause::from_vec(vec![
+                    Lit::from_i64(5),
+                    Lit::from_i64(-6),
+                    Lit::from_i64(7),
+                ]),
                 Clause::from_vec(vec![
                     Lit::from_i64(-7),
                     Lit::from_i64(-8),
@@ -410,7 +425,11 @@ mod tests {
         let expected = Instance::cnf(
             4,
             vec![
-                Clause::from_vec(vec![Lit::from_i64(1), Lit::from_i64(3), Lit::from_i64(-4)]),
+                Clause::from_vec(vec![
+                    Lit::from_i64(1),
+                    Lit::from_i64(3),
+                    Lit::from_i64(-4),
+                ]),
                 Clause::from_vec(vec![Lit::from_i64(4)]),
                 Clause::from_vec(vec![Lit::from_i64(2), Lit::from_i64(-3)]),
             ],

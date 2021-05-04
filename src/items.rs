@@ -34,7 +34,7 @@ impl ToString for Sign {
     fn to_string(&self) -> String {
         match self {
             Sign::Pos => String::from(""),
-            Sign::Neg => String::from("-")
+            Sign::Neg => String::from("-"),
         }
     }
 }
@@ -73,7 +73,6 @@ impl ToString for Lit {
         self.to_i64().to_string()
     }
 }
-
 
 /// Represents a clause instance within a `.cnf` file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -219,13 +218,15 @@ pub enum Instance {
 impl ToString for Instance {
     fn to_string(&self) -> String {
         match self {
-            Instance::Cnf {num_vars, clauses} =>
-                Instance::cnf_to_string(*num_vars, clauses),
-            Instance::Sat {num_vars, extensions, formula} => {
-                Instance::sat_to_string(*num_vars, extensions, formula)
-            },
+            Instance::Cnf { num_vars, clauses } => {
+                Instance::cnf_to_string(*num_vars, clauses)
+            }
+            Instance::Sat {
+                num_vars,
+                extensions,
+                formula,
+            } => Instance::sat_to_string(*num_vars, extensions, formula),
         }
-
     }
 }
 
@@ -240,7 +241,11 @@ impl Instance {
 
     /// Creates a new SAT instance for `.sat` files with given extensions and
     /// an underlying formula.
-    pub fn sat(num_vars: u64, extensions: Extensions, formula: Formula) -> Instance {
+    pub fn sat(
+        num_vars: u64,
+        extensions: Extensions,
+        formula: Formula,
+    ) -> Instance {
         Instance::Sat {
             num_vars,
             extensions,
@@ -248,8 +253,11 @@ impl Instance {
         }
     }
 
-    fn sat_to_string(num_vars: u64, extensions: &Extensions,
-                     formula: &Formula) -> String {
+    fn sat_to_string(
+        num_vars: u64,
+        extensions: &Extensions,
+        formula: &Formula,
+    ) -> String {
         let problem = format!("p {} {}", extensions.to_string(), num_vars);
         let formula = formula.to_string();
         format!("{}\n{}\n", problem, formula)
@@ -260,8 +268,11 @@ impl Instance {
             let key = format!("p cnf {} {}\n", num_vars, clauses.len());
             let clauses = clauses.iter().map(|clause| {
                 let cmap = clause.lits().iter().map(|lit| {
-                    let sign = String::from(
-                        if lit.sign() == Sign::Neg { "-" }  else { "" });
+                    let sign = String::from(if lit.sign() == Sign::Neg {
+                        "-"
+                    } else {
+                        ""
+                    });
                     format!("{}{}", sign, lit.var().to_u64().to_string())
                 });
                 let cvec: Vec<String> = cmap.collect();
@@ -279,9 +290,8 @@ impl Instance {
     /// `comments` is a list of comments which are inserted into the
     /// beginning of the resulting String.
     pub fn serialize(&self, comments: &Vec<String>) -> String {
-        let comments: Vec<String> = comments.iter()
-                .map(|x| format!("c {}", x))
-                .collect();
+        let comments: Vec<String> =
+            comments.iter().map(|x| format!("c {}", x)).collect();
         let comments: String = comments.join("\n");
 
         let body = self.to_string();
@@ -309,9 +319,9 @@ impl ToString for Extensions {
         } else {
             String::from(match *self {
                 Extensions::NONE => "sat",
-                Extensions::XOR  => "satx",
-                Extensions::EQ   => "sate",
-                _ => "Illegal extension"
+                Extensions::XOR => "satx",
+                Extensions::EQ => "sate",
+                _ => "Illegal extension",
             })
         }
     }
