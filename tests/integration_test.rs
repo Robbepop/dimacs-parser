@@ -42,19 +42,47 @@ fn simple_cnf_serialize_2() {
 }
 
 #[test]
-fn simple_sat_seraizlie() {
+fn simple_sat_serialize() {
     let sample = r"
         c Sample DIMACS .sat file
         p sat 42
         (*(+(1 3 -4)
         +(4)
         +(2 3)))";
-    let comments = vec![
-        String::from("Sample DIMACS.cnf file"),
-        String::from("holding some information"),
-    ];
+    let comments = vec![];
     let parsed = read_dimacs(sample.as_bytes()).expect("valid .sat");
     let ser = parsed.serialize(&comments);
-    let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .cnf");
+    let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .sat");
+    assert_eq!(parsed, parsed2);
+}
+
+#[test]
+fn xor_sat_serialize() {
+    let sample = r"
+        c Sample DIMACS .satx file
+        p satx 42
+        (xor(+(1 3 -4)
+        +(4)
+        +(2 3)))";
+    let comments = vec![];
+    let parsed = read_dimacs(sample.as_bytes()).expect("valid .satx");
+    let ser = parsed.serialize(&comments);
+    let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .satx");
+    assert_eq!(parsed, parsed2);
+}
+#[test]
+fn xoreq_sat_serialize() {
+    let sample = r"
+        c Sample DIMACS .satex file
+        p satex 42
+        (xor(+(1 3 -4)
+        +(4)
+        =(2 3)))";
+    let comments = vec![];
+    let parsed = read_dimacs(sample.as_bytes()).expect("valid .satex");
+    let ser = parsed.serialize(&comments);
+    println!("parsed: {}", parsed);
+    println!("serialized: {}", ser);
+    let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .satex");
     assert_eq!(parsed, parsed2);
 }

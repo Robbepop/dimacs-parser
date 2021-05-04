@@ -1,7 +1,7 @@
 //! Some item definitions used in instances to provide a virtual representative
 //! structure of `.cnf` or `.sat` files and their associated clauses or formula.
 
-use std::string::ToString;
+use std::fmt::Display;
 
 /// Represents a variable within a SAT instance.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -14,9 +14,9 @@ impl Var {
     }
 }
 
-impl ToString for Var {
-    fn to_string(&self) -> String {
-        self.to_u64().to_string()
+impl Display for Var {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_u64())
     }
 }
 
@@ -30,12 +30,16 @@ pub enum Sign {
     Neg,
 }
 
-impl ToString for Sign {
-    fn to_string(&self) -> String {
-        match self {
-            Sign::Pos => String::from(""),
-            Sign::Neg => String::from("-"),
-        }
+impl Display for Sign {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Sign::Pos => "",
+                Sign::Neg => "-",
+            }
+        )
     }
 }
 
@@ -68,9 +72,9 @@ impl Lit {
     }
 }
 
-impl ToString for Lit {
-    fn to_string(&self) -> String {
-        self.to_i64().to_string()
+impl Display for Lit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_i64())
     }
 }
 
@@ -135,22 +139,42 @@ pub enum Formula {
     Eq(FormulaList),
 }
 
-impl ToString for Formula {
-    fn to_string(&self) -> String {
-        let fl_to_string = |fl: &FormulaList| {
-            let fv: Vec<String> = fl.iter().map(|x| x.to_string()).collect();
-            fv.join(" ")
-        };
+impl Display for Formula {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Prefix
         match self {
-            Formula::Lit(l) => l.to_string(),
-            Formula::Paren(f) => format!("({})", f.to_string()),
-            Formula::Neg(f) => format!("-{}", f.to_string()),
-            Formula::And(fl) => format!("*({})", fl_to_string(fl)),
-            Formula::Or(fl) => format!("+({})", fl_to_string(fl)),
-            Formula::Xor(fl) => format!("xor({})", fl_to_string(fl)),
-            Formula::Eq(fl) => format!("=({})", fl_to_string(fl)),
+            Formula::Lit(l) => write!(f, "{}", l)?,
+            Formula::Paren(m) => write!(f, "({})", m)?,
+            Formula::Neg(m) => write!(f, "-{}", m)?,
+            Formula::And(_) => write!(f, "*(")?,
+            Formula::Or(_) => write!(f, "+(")?,
+            Formula::Xor(_) => write!(f, "xor(")?,
+            Formula::Eq(_) => write!(f, "=(")?,
+        };
+
+        // Suffix
+        match self {
+            Formula::Lit(_) | Formula::Paren(_) | Formula::Neg(_) => {}
+            Formula::And(m)
+            | Formula::Or(m)
+            | Formula::Xor(m)
+            | Formula::Eq(m) => {
+                for idx in 0..(m.len() - 1) {
+                    write!(f, "{} ", m[idx])?;
+                }
+                if m.len() != 0 {
+                    write!(f, "{})", m[m.len() - 1])?;
+                } else {
+                    write!(f, ")")?;
+                }
+            }
         }
+        Ok(())
     }
+    // for idx in 0..ml.len() {
+    //     write!(f, "{} ", ml[idx])?;
+    // }
+    // write!(f, ") ")
 }
 
 impl Formula {
@@ -215,17 +239,17 @@ pub enum Instance {
     },
 }
 
-impl ToString for Instance {
-    fn to_string(&self) -> String {
+impl Display for Instance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Instance::Cnf { num_vars, clauses } => {
-                Instance::cnf_to_string(*num_vars, clauses)
+                Instance::fmt_cnf(f, *num_vars, clauses)
             }
             Instance::Sat {
                 num_vars,
                 extensions,
                 formula,
-            } => Instance::sat_to_string(*num_vars, extensions, formula),
+            } => Instance::fmt_sat(f, *num_vars, extensions, formula),
         }
     }
 }
@@ -253,37 +277,29 @@ impl Instance {
         }
     }
 
-    fn sat_to_string(
+    fn fmt_sat(
+        f: &mut std::fmt::Formatter<'_>,
         num_vars: u64,
         extensions: &Extensions,
         formula: &Formula,
-    ) -> String {
-        let problem = format!("p {} {}", extensions.to_string(), num_vars);
-        let formula = formula.to_string();
-        format!("{}\n{}\n", problem, formula)
+    ) -> std::fmt::Result {
+        write!(f, "p {} {}\n", extensions, num_vars)?;
+        write!(f, "{}\n", formula)
     }
 
-    fn cnf_to_string(num_vars: u64, clauses: &Box<[Clause]>) -> String {
-        let (clauses, key) = {
-            let key = format!("p cnf {} {}\n", num_vars, clauses.len());
-            let clauses = clauses.iter().map(|clause| {
-                let cmap = clause.lits().iter().map(|lit| {
-                    let sign = String::from(if lit.sign() == Sign::Neg {
-                        "-"
-                    } else {
-                        ""
-                    });
-                    format!("{}{}", sign, lit.var().to_u64().to_string())
-                });
-                let cvec: Vec<String> = cmap.collect();
-                let cstr = cvec.join(" ");
-                format!("{} 0", cstr)
-            });
-            let cvec: Vec<String> = clauses.collect();
-            let cstr = cvec.join("\n");
-            (cstr, key)
-        };
-        format!("{}{}\n", key, clauses)
+    fn fmt_cnf(
+        f: &mut std::fmt::Formatter<'_>,
+        num_vars: u64,
+        clauses: &Box<[Clause]>,
+    ) -> std::fmt::Result {
+        write!(f, "p cnf {} {}\n", num_vars, clauses.len())?;
+        for clause in clauses.iter() {
+            for literal in clause.lits() {
+                write!(f, "{} ", literal)?;
+            }
+            write!(f, "0\n")?;
+        }
+        Ok(())
     }
 
     /// Creates a SAT or CNF instance, converting it into a String
@@ -311,18 +327,18 @@ bitflags! {
     }
 }
 
-impl ToString for Extensions {
-    fn to_string(&self) -> String {
+impl Display for Extensions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let eqxor = Extensions::EQ | Extensions::XOR;
         if *self == eqxor {
-            String::from("satex")
+            write!(f, "satex")
         } else {
-            String::from(match *self {
-                Extensions::NONE => "sat",
-                Extensions::XOR => "satx",
-                Extensions::EQ => "sate",
-                _ => "Illegal extension",
-            })
+            match *self {
+                Extensions::NONE => write!(f, "sat"),
+                Extensions::XOR => write!(f, "satx"),
+                Extensions::EQ => write!(f, "sate"),
+                _ => Err(std::fmt::Error::default()),
+            }
         }
     }
 }
