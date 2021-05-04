@@ -1,6 +1,8 @@
 //! Some item definitions used in instances to provide a virtual representative
 //! structure of `.cnf` or `.sat` files and their associated clauses or formula.
 
+use std::string::ToString;
+
 /// Represents a variable within a SAT instance.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Var(pub u64);
@@ -12,6 +14,12 @@ impl Var {
     }
 }
 
+impl ToString for Var {
+    fn to_string(&self) -> String {
+        self.to_u64().to_string()
+    }
+}
+
 /// Represents the sign of a literal.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Sign {
@@ -20,6 +28,15 @@ pub enum Sign {
 
     /// Negative sign.
     Neg,
+}
+
+impl ToString for Sign {
+    fn to_string(&self) -> String {
+        match self {
+            Sign::Pos => String::from(""),
+            Sign::Neg => String::from("-")
+        }
+    }
 }
 
 /// Represents a literal within clauses of formulas of a SAT instance.
@@ -50,6 +67,13 @@ impl Lit {
         }
     }
 }
+
+impl ToString for Lit {
+    fn to_string(&self) -> String {
+        self.to_i64().to_string()
+    }
+}
+
 
 /// Represents a clause instance within a `.cnf` file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -110,6 +134,24 @@ pub enum Formula {
     /// Represents `=(f_1 .. f_k)` if `f_1, .., f_k` are valid formulas.
     /// The effect is a logical equals of its inner formulas.
     Eq(FormulaList),
+}
+
+impl ToString for Formula {
+    fn to_string(&self) -> String {
+        let fl_to_string = |fl: &FormulaList| {
+            let fv: Vec<String> = fl.iter().map(|x| x.to_string()).collect();
+            fv.join(" ")
+        };
+        match self {
+            Formula::Lit(l) => l.to_string(),
+            Formula::Paren(f) => format!("({})", f.to_string()),
+            Formula::Neg(f) => format!("-{}", f.to_string()),
+            Formula::And(fl) => format!("*({})", fl_to_string(fl)),
+            Formula::Or(fl) => format!("+({})", fl_to_string(fl)),
+            Formula::Xor(fl) => format!("xor({})", fl_to_string(fl)),
+            Formula::Eq(fl) => format!("=({})", fl_to_string(fl)),
+        }
+    }
 }
 
 impl Formula {
@@ -174,22 +216,76 @@ pub enum Instance {
     },
 }
 
+impl ToString for Instance {
+    fn to_string(&self) -> String {
+        match self {
+            Instance::Cnf {num_vars, clauses} =>
+                Instance::cnf_to_string(*num_vars, clauses),
+            Instance::Sat {num_vars, extensions, formula} => {
+                Instance::sat_to_string(*num_vars, extensions, formula)
+            },
+        }
+
+    }
+}
+
 impl Instance {
     /// Creates a new SAT instance for `.cnf` files with given clauses.
     pub fn cnf(num_vars: u64, clauses: Vec<Clause>) -> Instance {
         Instance::Cnf {
-            num_vars: num_vars,
+            num_vars,
             clauses: clauses.into_boxed_slice(),
         }
     }
 
-    /// Creates a new SAT instance for `.sat` files with given extensions and an underlying formula.
+    /// Creates a new SAT instance for `.sat` files with given extensions and
+    /// an underlying formula.
     pub fn sat(num_vars: u64, extensions: Extensions, formula: Formula) -> Instance {
         Instance::Sat {
-            num_vars: num_vars,
-            extensions: extensions,
-            formula: formula,
+            num_vars,
+            extensions,
+            formula,
         }
+    }
+
+    fn sat_to_string(num_vars: u64, extensions: &Extensions,
+                     formula: &Formula) -> String {
+        let problem = format!("p {} {}", extensions.to_string(), num_vars);
+        let formula = formula.to_string();
+        format!("{}\n{}\n", problem, formula)
+    }
+
+    fn cnf_to_string(num_vars: u64, clauses: &Box<[Clause]>) -> String {
+        let (clauses, key) = {
+            let key = format!("p cnf {} {}\n", num_vars, clauses.len());
+            let clauses = clauses.iter().map(|clause| {
+                let cmap = clause.lits().iter().map(|lit| {
+                    let sign = String::from(
+                        if lit.sign() == Sign::Neg { "-" }  else { "" });
+                    format!("{}{}", sign, lit.var().to_u64().to_string())
+                });
+                let cvec: Vec<String> = cmap.collect();
+                let cstr = cvec.join(" ");
+                format!("{} 0", cstr)
+            });
+            let cvec: Vec<String> = clauses.collect();
+            let cstr = cvec.join("\n");
+            (cstr, key)
+        };
+        format!("{}{}\n", key, clauses)
+    }
+
+    /// Creates a SAT or CNF instance, converting it into a String
+    /// `comments` is a list of comments which are inserted into the
+    /// beginning of the resulting String.
+    pub fn serialize(&self, comments: &Vec<String>) -> String {
+        let comments: Vec<String> = comments.iter()
+                .map(|x| format!("c {}", x))
+                .collect();
+        let comments: String = comments.join("\n");
+
+        let body = self.to_string();
+        format!("{}\n{}\n", comments, body)
     }
 }
 
@@ -202,5 +298,21 @@ bitflags! {
         const XOR  = 0b00000001;
         /// If the EQ-Extension is being used to allow for `=(..)` formulas.
         const EQ   = 0b00000010;
+    }
+}
+
+impl ToString for Extensions {
+    fn to_string(&self) -> String {
+        let eqxor = Extensions::EQ | Extensions::XOR;
+        if *self == eqxor {
+            String::from("satex")
+        } else {
+            String::from(match *self {
+                Extensions::NONE => "sat",
+                Extensions::XOR  => "satx",
+                Extensions::EQ   => "sate",
+                _ => "Illegal extension"
+            })
+        }
     }
 }
