@@ -171,8 +171,9 @@ impl Display for Formula {
                     write!(f, "{} ", formula)?;
                 }
                 if !fl.is_empty() {
-                    write!(f, "{})", fl.last().unwrap())?;
+                    write!(f, "{}", fl.last().unwrap())?;
                 }
+                write!(f, ")")?;
             }
         }
         Ok(())
