@@ -3,6 +3,13 @@
 
 use std::fmt::Display;
 
+#[cfg(windows)]
+const LINE_ENDING: &str = "\r\n";
+
+#[cfg(not(windows))]
+const LINE_ENDING: &str = "\n";
+
+
 /// Represents a variable within a SAT instance.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Var(pub u64);
@@ -143,9 +150,9 @@ impl Display for Formula {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Prefix
         match self {
-            Formula::Lit(l) => write!(f, "{}", l)?,
-            Formula::Paren(m) => write!(f, "({})", m)?,
-            Formula::Neg(m) => write!(f, "-{}", m)?,
+            Formula::Lit(literal) => write!(f, "{}", literal)?,
+            Formula::Paren(formula) => write!(f, "({})", formula)?,
+            Formula::Neg(formula) => write!(f, "-{}", formula)?,
             Formula::And(_) => write!(f, "*(")?,
             Formula::Or(_) => write!(f, "+(")?,
             Formula::Xor(_) => write!(f, "xor(")?,
@@ -155,26 +162,21 @@ impl Display for Formula {
         // Suffix
         match self {
             Formula::Lit(_) | Formula::Paren(_) | Formula::Neg(_) => {}
-            Formula::And(m)
-            | Formula::Or(m)
-            | Formula::Xor(m)
-            | Formula::Eq(m) => {
-                for idx in 0..(m.len() - 1) {
-                    write!(f, "{} ", m[idx])?;
+            Formula::And(formula_list)
+            | Formula::Or(formula_list)
+            | Formula::Xor(formula_list)
+            | Formula::Eq(formula_list) => {
+                let fl = formula_list;
+                for formula in fl[0..fl.len() - 1].iter() {
+                    write!(f, "{} ", formula)?;
                 }
-                if m.len() != 0 {
-                    write!(f, "{})", m[m.len() - 1])?;
-                } else {
-                    write!(f, ")")?;
+                if !fl.is_empty() {
+                    write!(f, "{})", fl.last().unwrap())?;
                 }
             }
         }
         Ok(())
     }
-    // for idx in 0..ml.len() {
-    //     write!(f, "{} ", ml[idx])?;
-    // }
-    // write!(f, ") ")
 }
 
 impl Formula {
@@ -283,21 +285,21 @@ impl Instance {
         extensions: &Extensions,
         formula: &Formula,
     ) -> std::fmt::Result {
-        write!(f, "p {} {}\n", extensions, num_vars)?;
-        write!(f, "{}\n", formula)
+        writeln!(f, "p {} {}", extensions, num_vars)?;
+        writeln!(f, "{}", formula)
     }
 
     fn fmt_cnf(
         f: &mut std::fmt::Formatter<'_>,
         num_vars: u64,
-        clauses: &Box<[Clause]>,
+        clauses: &[Clause],
     ) -> std::fmt::Result {
-        write!(f, "p cnf {} {}\n", num_vars, clauses.len())?;
+        writeln!(f, "p cnf {} {}", num_vars, clauses.len())?;
         for clause in clauses.iter() {
             for literal in clause.lits() {
                 write!(f, "{} ", literal)?;
             }
-            write!(f, "0\n")?;
+            writeln!(f, "0")?;
         }
         Ok(())
     }
@@ -305,13 +307,13 @@ impl Instance {
     /// Creates a SAT or CNF instance, converting it into a String
     /// `comments` is a list of comments which are inserted into the
     /// beginning of the resulting String.
-    pub fn serialize(&self, comments: &Vec<String>) -> String {
+    pub fn serialize(&self, comments: &[String]) -> String {
         let comments: Vec<String> =
             comments.iter().map(|x| format!("c {}", x)).collect();
-        let comments: String = comments.join("\n");
+        let comments: String = comments.join(LINE_ENDING);
 
         let body = self.to_string();
-        format!("{}\n{}\n", comments, body)
+        format!("{}{}{}{}", comments, LINE_ENDING, body, LINE_ENDING)
     }
 }
 
