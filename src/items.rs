@@ -3,13 +3,6 @@
 
 use std::fmt::Display;
 
-#[cfg(windows)]
-const LINE_ENDING: &str = "\r\n";
-
-#[cfg(not(windows))]
-const LINE_ENDING: &str = "\n";
-
-
 /// Represents a variable within a SAT instance.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Var(pub u64);
@@ -308,13 +301,16 @@ impl Instance {
     /// Creates a SAT or CNF instance, converting it into a String
     /// `comments` is a list of comments which are inserted into the
     /// beginning of the resulting String.
-    pub fn serialize(&self, comments: &[String]) -> String {
-        let comments: Vec<String> =
-            comments.iter().map(|x| format!("c {}", x)).collect();
-        let comments: String = comments.join(LINE_ENDING);
+    pub fn serialize<O: core::fmt::Write>(
+        &self,
+        comments: &[String],
+        output: &mut O,
+    ) -> core::fmt::Result {
+        for comment in comments {
+            writeln!(output, "c {}", comment)?;
+        }
 
-        let body = self.to_string();
-        format!("{}{}{}{}", comments, LINE_ENDING, body, LINE_ENDING)
+        writeln!(output, "{}", self)
     }
 }
 
