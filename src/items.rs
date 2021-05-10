@@ -160,11 +160,11 @@ impl Display for Formula {
             | Formula::Xor(formula_list)
             | Formula::Eq(formula_list) => {
                 let fl = formula_list;
-                for formula in fl[0..fl.len() - 1].iter() {
-                    write!(f, "{} ", formula)?;
-                }
-                if !fl.is_empty() {
-                    write!(f, "{}", fl.last().unwrap())?;
+                if let Some((last, rest)) = fl.split_last() {
+                    for formula in rest {
+                        write!(f, "{} ", formula)?;
+                    }
+                    write!(f, "{}", last)?;
                 }
                 write!(f, ")")?;
             }
@@ -303,7 +303,7 @@ impl Instance {
     /// beginning of the resulting String.
     pub fn serialize<O: core::fmt::Write>(
         &self,
-        comments: &[String],
+        comments: &[&str],
         output: &mut O,
     ) -> core::fmt::Result {
         for comment in comments {
