@@ -1,6 +1,8 @@
 //! Some item definitions used in instances to provide a virtual representative
 //! structure of `.cnf` or `.sat` files and their associated clauses or formula.
 
+use std::fmt::Display;
+
 /// Represents a variable within a SAT instance.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Var(pub u64);
@@ -12,6 +14,12 @@ impl Var {
     }
 }
 
+impl Display for Var {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_u64())
+    }
+}
+
 /// Represents the sign of a literal.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Sign {
@@ -20,6 +28,19 @@ pub enum Sign {
 
     /// Negative sign.
     Neg,
+}
+
+impl Display for Sign {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Sign::Pos => "",
+                Sign::Neg => "-",
+            }
+        )
+    }
 }
 
 /// Represents a literal within clauses of formulas of a SAT instance.
@@ -48,6 +69,12 @@ impl Lit {
             true => Sign::Pos,
             _ => Sign::Neg,
         }
+    }
+}
+
+impl Display for Lit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_i64())
     }
 }
 
@@ -112,6 +139,40 @@ pub enum Formula {
     Eq(FormulaList),
 }
 
+impl Display for Formula {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Prefix
+        match self {
+            Formula::Lit(literal) => write!(f, "{}", literal)?,
+            Formula::Paren(formula) => write!(f, "({})", formula)?,
+            Formula::Neg(formula) => write!(f, "-{}", formula)?,
+            Formula::And(_) => write!(f, "*(")?,
+            Formula::Or(_) => write!(f, "+(")?,
+            Formula::Xor(_) => write!(f, "xor(")?,
+            Formula::Eq(_) => write!(f, "=(")?,
+        };
+
+        // Suffix
+        match self {
+            Formula::Lit(_) | Formula::Paren(_) | Formula::Neg(_) => {}
+            Formula::And(formula_list)
+            | Formula::Or(formula_list)
+            | Formula::Xor(formula_list)
+            | Formula::Eq(formula_list) => {
+                let fl = formula_list;
+                if let Some((last, rest)) = fl.split_last() {
+                    for formula in rest {
+                        write!(f, "{} ", formula)?;
+                    }
+                    write!(f, "{}", last)?;
+                }
+                write!(f, ")")?;
+            }
+        }
+        Ok(())
+    }
+}
+
 impl Formula {
     /// Creates a new literal leaf formula with the given literal.
     pub fn lit(lit: Lit) -> Formula {
@@ -174,22 +235,82 @@ pub enum Instance {
     },
 }
 
+impl Display for Instance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Instance::Cnf { num_vars, clauses } => {
+                Instance::fmt_cnf(f, *num_vars, clauses)
+            }
+            Instance::Sat {
+                num_vars,
+                extensions,
+                formula,
+            } => Instance::fmt_sat(f, *num_vars, extensions, formula),
+        }
+    }
+}
+
 impl Instance {
     /// Creates a new SAT instance for `.cnf` files with given clauses.
     pub fn cnf(num_vars: u64, clauses: Vec<Clause>) -> Instance {
         Instance::Cnf {
-            num_vars: num_vars,
+            num_vars,
             clauses: clauses.into_boxed_slice(),
         }
     }
 
-    /// Creates a new SAT instance for `.sat` files with given extensions and an underlying formula.
-    pub fn sat(num_vars: u64, extensions: Extensions, formula: Formula) -> Instance {
+    /// Creates a new SAT instance for `.sat` files with given extensions and
+    /// an underlying formula.
+    pub fn sat(
+        num_vars: u64,
+        extensions: Extensions,
+        formula: Formula,
+    ) -> Instance {
         Instance::Sat {
-            num_vars: num_vars,
-            extensions: extensions,
-            formula: formula,
+            num_vars,
+            extensions,
+            formula,
         }
+    }
+
+    fn fmt_sat(
+        f: &mut std::fmt::Formatter<'_>,
+        num_vars: u64,
+        extensions: &Extensions,
+        formula: &Formula,
+    ) -> std::fmt::Result {
+        writeln!(f, "p {} {}", extensions, num_vars)?;
+        writeln!(f, "{}", formula)
+    }
+
+    fn fmt_cnf(
+        f: &mut std::fmt::Formatter<'_>,
+        num_vars: u64,
+        clauses: &[Clause],
+    ) -> std::fmt::Result {
+        writeln!(f, "p cnf {} {}", num_vars, clauses.len())?;
+        for clause in clauses.iter() {
+            for literal in clause.lits() {
+                write!(f, "{} ", literal)?;
+            }
+            writeln!(f, "0")?;
+        }
+        Ok(())
+    }
+
+    /// Creates a SAT or CNF instance, converting it into a String
+    /// `comments` is a list of comments which are inserted into the
+    /// beginning of the resulting String.
+    pub fn serialize<O: core::fmt::Write>(
+        &self,
+        comments: &[&str],
+        output: &mut O,
+    ) -> core::fmt::Result {
+        for comment in comments {
+            writeln!(output, "c {}", comment)?;
+        }
+
+        writeln!(output, "{}", self)
     }
 }
 
@@ -202,5 +323,21 @@ bitflags! {
         const XOR  = 0b00000001;
         /// If the EQ-Extension is being used to allow for `=(..)` formulas.
         const EQ   = 0b00000010;
+    }
+}
+
+impl Display for Extensions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let eqxor = Extensions::EQ | Extensions::XOR;
+        if *self == eqxor {
+            write!(f, "satex")
+        } else {
+            match *self {
+                Extensions::NONE => write!(f, "sat"),
+                Extensions::XOR => write!(f, "satx"),
+                Extensions::EQ => write!(f, "sate"),
+                _ => Err(std::fmt::Error::default()),
+            }
+        }
     }
 }

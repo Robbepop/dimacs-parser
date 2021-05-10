@@ -343,7 +343,10 @@ mod tests {
             lexer.next(),
             Some(Ok(Token::new(Loc::new(6, 6), Ident(Cnf))))
         );
-        assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(6, 10), Nat(42)))));
+        assert_eq!(
+            lexer.next(),
+            Some(Ok(Token::new(Loc::new(6, 10), Nat(42))))
+        );
         assert_eq!(
             lexer.next(),
             Some(Ok(Token::new(Loc::new(6, 13), Nat(1337))))
@@ -369,7 +372,10 @@ mod tests {
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(10, 7), Minus))));
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(10, 8), Nat(8)))));
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(10, 10), Minus))));
-        assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(10, 11), Nat(9)))));
+        assert_eq!(
+            lexer.next(),
+            Some(Ok(Token::new(Loc::new(10, 11), Nat(9))))
+        );
         assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(10, 13), Zero))));
 
         assert_eq!(lexer.next(), None);
@@ -395,7 +401,10 @@ mod tests {
             lexer.next(),
             Some(Ok(Token::new(Loc::new(3, 6), Ident(Sat))))
         );
-        assert_eq!(lexer.next(), Some(Ok(Token::new(Loc::new(3, 10), Nat(42)))));
+        assert_eq!(
+            lexer.next(),
+            Some(Ok(Token::new(Loc::new(3, 10), Nat(42))))
+        );
         assert_eq!(
             lexer.next(),
             Some(Ok(Token::new(Loc::new(3, 13), Nat(1337))))
