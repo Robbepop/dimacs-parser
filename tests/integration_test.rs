@@ -13,11 +13,12 @@ fn simple_cnf_serialize_1() {
         5 -6 7 0
         -7 -8 -9 0";
     let comments = vec![
-        String::from("Sample DIMACS.cnf file"),
-        String::from("holding some information"),
+        "Sample DIMACS.cnf file",
+        "holding some information",
     ];
     let parsed = read_dimacs(sample.as_bytes()).expect("valid .cnf");
-    let ser = parsed.serialize(&comments);
+    let mut ser = String::from("");
+    parsed.serialize(&comments, &mut ser).unwrap();
     let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .cnf");
     assert_eq!(parsed, parsed2);
 }
@@ -32,11 +33,12 @@ fn simple_cnf_serialize_2() {
         4 0 2
         -3";
     let comments = vec![
-        String::from("Sample DIMACS.cnf file"),
-        String::from("holding some information"),
+        "Sample DIMACS.cnf file",
+        "holding some information",
     ];
     let parsed = read_dimacs(sample.as_bytes()).expect("valid .cnf");
-    let ser = parsed.serialize(&comments);
+    let mut ser = String::from("");
+    parsed.serialize(&comments, &mut ser).unwrap();
     let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .cnf");
     assert_eq!(parsed, parsed2);
 }
@@ -51,7 +53,8 @@ fn simple_sat_serialize() {
         +(2 3)))";
     let comments = vec![];
     let parsed = read_dimacs(sample.as_bytes()).expect("valid .sat");
-    let ser = parsed.serialize(&comments);
+    let mut ser = String::from("");
+    parsed.serialize(&comments, &mut ser).unwrap();
     let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .sat");
     assert_eq!(parsed, parsed2);
 }
@@ -66,7 +69,8 @@ fn xor_sat_serialize() {
         +(2 3)))";
     let comments = vec![];
     let parsed = read_dimacs(sample.as_bytes()).expect("valid .satx");
-    let ser = parsed.serialize(&comments);
+    let mut ser = String::from("");
+    parsed.serialize(&comments, &mut ser).unwrap();
     let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .satx");
     assert_eq!(parsed, parsed2);
 }
@@ -80,9 +84,8 @@ fn xoreq_sat_serialize() {
         =(2 3)))";
     let comments = vec![];
     let parsed = read_dimacs(sample.as_bytes()).expect("valid .satex");
-    let ser = parsed.serialize(&comments);
-    println!("parsed: {}", parsed);
-    println!("serialized: {}", ser);
+    let mut ser = String::from("");
+    parsed.serialize(&comments, &mut ser).unwrap();
     let parsed2 = read_dimacs(ser.as_bytes()).expect("valid .satex");
     assert_eq!(parsed, parsed2);
 }
