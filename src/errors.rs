@@ -1,6 +1,8 @@
 //! Defines some error kinds and facilities to communicate errors while parsing
 //! `.cnf` or `.sat` files.
 
+use std::{error, fmt};
+
 /// Represents a source line and column of an error.
 /// Used to provide the user of this parser facility with necesary information
 /// to debug their input files formats.
@@ -28,6 +30,12 @@ impl Loc {
     /// Bumps the column of this location.
     pub fn bump_col(&mut self) {
         self.col += 1;
+    }
+}
+
+impl fmt::Display for Loc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.line, self.col)
     }
 }
 
@@ -89,6 +97,25 @@ impl ParseError {
         }
     }
 }
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.kind {
+            ErrorKind::InvalidTokenStart => write!(f, "invalid token start at {}", self.loc),
+            ErrorKind::UnknownKeyword => write!(f, "unknown keyword at {}", self.loc),
+            ErrorKind::UnexpectedChar => write!(f, "unexpected character at {}", self.loc),
+            ErrorKind::UnexpectedToken => write!(f, "unexpected token at {}", self.loc),
+            ErrorKind::UnexpectedEndOfFile => write!(f, "unexpected end of file at {}", self.loc),
+            ErrorKind::EmptyTokenStream => write!(f, "empty token stream"),
+            ErrorKind::InvalidSatExtension => write!(f, "invalid sat extension"),
+            ErrorKind::NotParsedToEnd => write!(f, "not parsed to end"),
+            ErrorKind::ExpectedNat => write!(f, "expected natural number at {}", self.loc),
+            ErrorKind::ExpectedLit => write!(f, "expected literal at {}", self.loc),
+        }
+    }
+}
+
+impl error::Error for ParseError {}
 
 /// The result type used within this crate while parsing.
 pub type Result<T> = ::std::result::Result<T, ParseError>;
